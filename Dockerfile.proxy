@@ -1,0 +1,7 @@
+# 媒体代理服务（Node）—— 绕过签名 URL 的 CORS 限制
+FROM node:20-alpine
+WORKDIR /app
+COPY server/mediaProxyServer.mjs ./server/mediaProxyServer.mjs
+ENV PORT=3001
+EXPOSE 3001
+CMD ["node", "server/mediaProxyServer.mjs"]

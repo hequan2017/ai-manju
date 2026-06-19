@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useModel } from '@/contexts/ModelContext'
+import { NewApiAccountCard } from './NewApiAccountCard'
 import {
   markDefaultProvider,
   removeProvider,
@@ -89,6 +90,8 @@ export function Settings() {
           配置 OpenAI 兼容协议的 AI 供应商与模型。漫剧工作流会调用对话、图像、视频、语音四类模型。
         </p>
       </header>
+
+      <NewApiAccountCard />
 
       {/* 全局 API Key */}
       <Card>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useShotActions } from '@/hooks/useShotActions'
 import { useVideoSrc } from '@/hooks/useVideoSrc'
+import { assessShotQuality } from '@/services/qualityAssessmentService'
 import type { Keyframe, Shot } from '@/types'
 import { Badge, Button, Card } from '../ui'
 
@@ -31,6 +32,7 @@ export function ShotCard({ shot }: { shot: Shot }) {
     generateNineGrid,
   } = useShotActions(shot)
   const videoSrc = useVideoSrc(shot.interval?.videoUrl)
+  const qa = sd ? assessShotQuality(shot, sd) : null
 
   const sceneName = sd?.scenes.find((s) => s.id === shot.sceneId)?.name ?? '—'
   const start = shot.keyframes.find((k) => k.type === 'start')
@@ -48,6 +50,11 @@ export function ShotCard({ shot }: { shot: Shot }) {
         <Badge tone="accent">#{shot.index}</Badge>
         <span className="truncate text-xs text-text-muted">{sceneName}</span>
         <div className="ml-auto flex gap-1">
+          {qa && (
+            <Badge tone={qa.grade === 'pass' ? 'success' : qa.grade === 'warning' ? 'warning' : 'danger'}>
+              {qa.score}
+            </Badge>
+          )}
           {shot.shotSize && <Badge>{shot.shotSize}</Badge>}
           {shot.cameraMovement && <Badge>{shot.cameraMovement}</Badge>}
         </div>

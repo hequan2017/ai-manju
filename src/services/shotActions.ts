@@ -12,6 +12,7 @@ import type {
   VideoModelConfig,
 } from '@/types'
 import { generateAudio, generateImage, generateVideo, type AdapterContext } from './adapters'
+import { DEFAULT_NEGATIVE_PROMPT } from './promptTemplateService'
 
 /** 组合「场景 + 出场角色 + 动作 + 美术指导」为镜头提示词 */
 export function buildShotPrompt(shot: Shot, sd: ScriptData | null): string {
@@ -47,6 +48,7 @@ export async function generateStartFrame(
     model,
     prompt: buildShotPrompt(shot, sd),
     aspect,
+    negative: DEFAULT_NEGATIVE_PROMPT,
     referenceImage: scene?.referenceImage,
   })
 }
@@ -64,6 +66,7 @@ export async function generateEndFrame(
     model,
     prompt: `${buildShotPrompt(shot, sd)}, ending state of the action`,
     aspect,
+    negative: DEFAULT_NEGATIVE_PROMPT,
     referenceImage: start?.imageUrl,
   })
 }

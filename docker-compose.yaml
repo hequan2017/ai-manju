@@ -1,0 +1,24 @@
+services:
+  ai-manju:
+    build:
+      context: .
+      # 可选：构建时注入媒体代理端点
+      # args:
+      #   VITE_MEDIA_PROXY_ENDPOINT: "http://localhost:3001/api/media-proxy"
+    image: ai-manju:latest
+    container_name: ai-manju
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # 可选：媒体代理服务（绕过签名 URL 的 CORS 限制）
+  media-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    image: ai-manju-proxy:latest
+    container_name: ai-manju-proxy
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    profiles: ["proxy"]

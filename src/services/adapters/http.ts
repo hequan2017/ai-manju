@@ -4,6 +4,7 @@
  *   适配器仅依赖 AdapterContext（providers + globalApiKey），不耦合具体状态管理。
  */
 import type { ModelProvider } from '@/types'
+import { sleep } from '../utils'
 
 /** 适配器运行上下文（由调用方注入） */
 export interface AdapterContext {
@@ -49,7 +50,11 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
-/** 统一鉴权请求（Bearer Token） */
+/** 可重试的 HTTP 状态码（限流 / 网关 / 服务端瞬时错误） */
+const RETRY_STATUS = new Set([408, 425, 429, 500, 502, 503, 504])
+const MAX_RETRIES = 2
+
+/** 统一鉴权请求（Bearer Token），含指数退避重试 */
 export async function request(
   url: string,
   apiKey: string,
@@ -60,12 +65,26 @@ export async function request(
     Authorization: `Bearer ${apiKey}`,
     ...(opts.headers ?? {}),
   }
-  return fetch(url, {
-    method: opts.method ?? 'POST',
-    headers,
-    body: opts.body,
-    signal: opts.signal,
-  })
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: opts.method ?? 'POST',
+        headers,
+        body: opts.body,
+        signal: opts.signal,
+      })
+      // 限流 / 5xx：指数退避后重试（1s, 2s）
+      if (RETRY_STATUS.has(res.status) && attempt < MAX_RETRIES && !opts.signal?.aborted) {
+        await sleep(2 ** attempt * 1000)
+        continue
+      }
+      return res
+    } catch (err) {
+      // 网络错误 / 中断：未达上限且未取消则重试
+      if (attempt >= MAX_RETRIES || opts.signal?.aborted) throw err
+      await sleep(2 ** attempt * 1000)
+    }
+  }
 }
 
 /** 校验响应并抛出携带状态码与响应片段的错误 */

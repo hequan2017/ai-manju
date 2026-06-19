@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useAdapterContext, useModel } from '@/contexts/ModelContext'
+import { useAlert } from '@/contexts/AlertContext'
 import {
   generateDubbing as genDubbing,
   generateEndFrame,
@@ -29,6 +30,7 @@ export function useShotActions(shot: Shot) {
   const { currentEpisode, patchEpisode } = useProject()
   const { state } = useModel()
   const adapterCtx = useAdapterContext()
+  const { alert } = useAlert()
 
   const [busy, setBusy] = useState<Record<TaskKey, boolean>>({
     start: false,
@@ -59,7 +61,9 @@ export function useShotActions(shot: Shot) {
     try {
       await fn()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+      alert(msg, 'danger')
     } finally {
       setBusy((b) => ({ ...b, [key]: false }))
     }
