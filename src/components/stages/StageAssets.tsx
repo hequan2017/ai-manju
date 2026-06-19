@@ -7,10 +7,12 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { AlertTriangle, ImageOff, Loader2, MapPin, Shirt, Sparkles, Upload, User, Wand2 } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useAdapterContext, useModel } from '@/contexts/ModelContext'
+import { useAlert } from '@/contexts/AlertContext'
 import {
   generateAssetImage,
   type AssetImageKind,
 } from '@/services/assetService'
+import { generateAllCharacterPrompts } from '@/services/visualService'
 import { clone } from '@/services/utils'
 import type { Character, Prop, Scene, VisualAsset } from '@/types'
 import { WardrobeModal } from '../WardrobeModal'
@@ -29,8 +31,10 @@ export function StageAssets() {
   const adapterCtx = useAdapterContext()
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const { alert } = useAlert()
   const [batchKind, setBatchKind] = useState<AssetImageKind | null>(null)
   const [wardrobeChar, setWardrobeChar] = useState<Character | null>(null)
+  const [enriching, setEnriching] = useState(false)
 
   if (!currentEpisode) {
     return <EmptyState title="请先选择一集" />
@@ -112,6 +116,32 @@ export function StageAssets() {
     setWardrobeChar(next)
   }
 
+  /** AI 批量补全角色视觉提示词（6点结构化，风格统一） */
+  const handleEnrichCharacters = async () => {
+    if (!adapterCtx || !state || !sd) return
+    setEnriching(true)
+    try {
+      const map = await generateAllCharacterPrompts(adapterCtx, {
+        characters: sd.characters,
+        visualStyle: currentEpisode.visualStyle,
+        chatModel: state.currentConfig.chatModel,
+      })
+      patchEpisode(currentEpisode.id, (e) => {
+        if (!e.scriptData) return e
+        const next = clone(e.scriptData)
+        next.characters = next.characters.map((c) =>
+          map[c.id] ? { ...c, visualPrompt: map[c.id] } : c,
+        )
+        return { ...e, scriptData: next }
+      })
+      alert('角色提示词已补全', 'success')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err), 'danger')
+    } finally {
+      setEnriching(false)
+    }
+  }
+
   const generateBatch = async (kind: AssetImageKind) => {
     const list: VisualAsset[] =
       kind === 'character' ? sd.characters : kind === 'scene' ? sd.scenes : sd.props
@@ -135,6 +165,14 @@ export function StageAssets() {
       {!imageModel && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
           尚未配置图像模型，请前往「模型配置」。
+        </div>
+      )}
+
+      {sd.characters.length > 0 && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" loading={enriching} onClick={handleEnrichCharacters}>
+            <Wand2 className="h-4 w-4" /> AI 补全角色提示词
+          </Button>
         </div>
       )}
 

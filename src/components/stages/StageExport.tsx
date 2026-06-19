@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import JSZip from 'jszip'
-import { Clock, Download, Film, Package } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Download, Film, Package, Scissors } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useVideoSrc } from '@/hooks/useVideoSrc'
 import { materializeVideoRef } from '@/services/videoStorageService'
@@ -30,7 +30,7 @@ function mimeToExt(mime: string): string {
 }
 
 export function StageExport() {
-  const { currentProject, currentEpisode } = useProject()
+  const { currentProject, currentEpisode, patchEpisode } = useProject()
   const [exporting, setExporting] = useState(false)
   const [stitching, setStitching] = useState(false)
 
@@ -133,8 +133,59 @@ export function StageExport() {
     }
   }
 
+  /** 剪辑：上移/下移镜头（重排 shots 并刷新序号） */
+  const handleMoveShot = (shotId: string, dir: -1 | 1) => {
+    patchEpisode(currentEpisode.id, (e) => {
+      const shots = [...e.shots]
+      const idx = shots.findIndex((s) => s.id === shotId)
+      const target = idx + dir
+      if (idx < 0 || target < 0 || target >= shots.length) return e
+      ;[shots[idx], shots[target]] = [shots[target], shots[idx]]
+      return { ...e, shots: shots.map((s, i) => ({ ...s, index: i + 1 })) }
+    })
+  }
+
   return (
     <div className="space-y-5">
+      <Card>
+        <CardHeader>
+          <span className="flex items-center gap-2 text-sm font-medium text-text">
+            <Scissors className="h-4 w-4 text-accent" /> 剪辑（镜头排序）
+          </span>
+        </CardHeader>
+        <CardBody className="space-y-2">
+          {currentEpisode.shots.map((shot, i) => (
+            <div
+              key={shot.id}
+              className="flex items-center gap-2 rounded-lg border border-border bg-bg p-2 text-sm"
+            >
+              <span className="font-mono text-xs text-text-subtle">#{i + 1}</span>
+              <span className="flex-1 truncate text-text">{shot.actionSummary}</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title="上移"
+                disabled={i === 0}
+                onClick={() => handleMoveShot(shot.id, -1)}
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title="下移"
+                disabled={i === currentEpisode.shots.length - 1}
+                onClick={() => handleMoveShot(shot.id, 1)}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </CardBody>
+      </Card>
+
       <Card>
         <CardHeader className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-medium text-text">

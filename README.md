@@ -50,6 +50,18 @@
 
 ---
 
+## 🖼️ 界面预览
+
+| Dashboard（项目管理） | 导演台（镜头工作卡） |
+|---|---|
+| ![Dashboard](./images/dashboard.png) | ![导演台](./images/director.png) |
+
+| 导出（剪辑 + 时间轴 + 成片） | 登录（对接 new-api） |
+|---|---|
+| ![导出](./images/export.png) | ![登录](./images/login.png) |
+
+> 截图来自内置「流浪地球」示例项目——首页点击「加载示例」即可体验完整流程（剧本 → 资产 → 导演台 → 导出）。示例项目不可删除，可随时重新加载。
+
 ## ✨ 核心特性
 
 ### 📖 剧本与分镜
@@ -229,8 +241,34 @@ docker compose down
 
 > 生产环境建议构建时注入媒体代理端点：
 > `docker compose build --build-arg VITE_MEDIA_PROXY_ENDPOINT=https://your-proxy/api/media-proxy`
->
-> 端口映射默认 `8080:80`，可在 `docker-compose.yaml` 修改。
+
+**一键完整启动（前端 + new-api 后端）**：`docker-compose.yaml` 已内置 new-api 服务，`docker compose up -d --build` 同时启动：
+- 前端平台：http://localhost:8080
+- new-api 后端：http://localhost:3000（首次访问需注册首个账号，自动成为管理员）
+
+可选附加：`docker compose --profile proxy up -d`（媒体代理）、`--profile mysql up -d`（MySQL 替代 SQLite）。
+
+### 后端 new-api 部署与对接
+
+本平台所有**模型请求、用户登录、令牌管理**均通过 **new-api** 网关（OpenAI 兼容 + 用户系统）：
+
+| 步骤 | 操作 |
+|---|---|
+| 1. 启动 new-api | `docker compose up -d`（已含 new-api），或独立部署 new-api |
+| 2. 初始化 | 访问 http://localhost:3000，注册首个账号（自动管理员） |
+| 3. 配置渠道 | new-api 后台「渠道」添加 AI 供应商（OpenAI / 火山豆包 / Gemini 等）并设置模型 |
+| 4. 平台登录 | 本平台登录页填写 new-api 地址（`http://localhost:3000`）+ 账号密码 |
+| 5. 选用令牌 | 登录后「模型配置」→ new-api 账户卡片，选用/创建 API 令牌 → 自动用于所有模型调用 |
+
+**对接机制**（已实现，按 new-api 官方 API）：
+- 登录 `POST /api/user/login` → 换 access_token `GET /api/user/token`
+- 用户/令牌/模型：`/api/user/self`、`/api/token/`、`POST /api/token/:id/key`（取明文拼 `sk-`）、`/api/user/models`
+- 管理接口：`Authorization: <access_token>` + `New-Api-User: <id>` 头
+- 模型调用：OpenAI 兼容 `/v1/*` + `Authorization: Bearer sk-xxx`
+
+> new-api 数据持久化于 `./data/new-api`；`SESSION_SECRET` 请改为随机值；生产建议配 MySQL（`--profile mysql`）。
+
+> 端口映射默认 `8080:80`（前端）、`3000:3000`（new-api），可在 `docker-compose.yaml` 修改。
 
 ### 首次使用
 

@@ -308,6 +308,8 @@ export interface ManjuProject {
   title: string
   description?: string
   coverImage?: string
+  /** 示例项目标记（demo 不可删除） */
+  isDemo?: boolean
   createdAt: number
   lastModified: number
   visualStyle: string

@@ -2,13 +2,15 @@
  * 全局顶部导航栏
  */
 import { useNavigate } from 'react-router-dom'
-import { Moon, Settings, Sun, Clapperboard } from 'lucide-react'
+import { Clapperboard, LogIn, LogOut, Moon, Settings, Sun } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { IconButton } from './ui'
+import { useAuth } from '@/contexts/AuthContext'
+import { Button, IconButton } from './ui'
 
 export function TopBar() {
   const navigate = useNavigate()
   const { theme, toggle } = useTheme()
+  const { user, logout } = useAuth()
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-bg-elevated px-4">
@@ -23,6 +25,20 @@ export function TopBar() {
       </button>
 
       <div className="flex items-center gap-1">
+        {user ? (
+          <>
+            <span className="hidden text-xs text-text-muted sm:inline">{user.username}</span>
+            <IconButton
+              icon={<LogOut className="h-4 w-4" />}
+              label="退出登录"
+              onClick={() => void logout()}
+            />
+          </>
+        ) : (
+          <Button size="sm" variant="ghost" onClick={() => navigate('/login')}>
+            <LogIn className="h-4 w-4" /> 登录
+          </Button>
+        )}
         <IconButton
           icon={theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           label="切换主题"

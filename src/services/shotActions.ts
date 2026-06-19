@@ -6,6 +6,7 @@
 import type {
   AspectRatio,
   AudioModelConfig,
+  ChatModelConfig,
   ImageModelConfig,
   ScriptData,
   Shot,
@@ -13,6 +14,7 @@ import type {
 } from '@/types'
 import { generateAudio, generateImage, generateVideo, type AdapterContext } from './adapters'
 import { DEFAULT_NEGATIVE_PROMPT } from './promptTemplateService'
+import { compressPromptWithLLM } from './promptCompressionService'
 
 /** 组合「场景 + 出场角色 + 动作 + 美术指导」为镜头提示词 */
 export function buildShotPrompt(shot: Shot, sd: ScriptData | null): string {
@@ -42,11 +44,17 @@ export async function generateStartFrame(
   sd: ScriptData | null,
   model: ImageModelConfig,
   aspect: AspectRatio,
+  chatModel?: ChatModelConfig,
 ): Promise<string> {
   const scene = sd?.scenes.find((s) => s.id === shot.sceneId)
+  let prompt = buildShotPrompt(shot, sd)
+  // 超 4500 字符触发 LLM 压缩，避免超出模型上限被截断
+  if (chatModel && prompt.length > 4500) {
+    prompt = await compressPromptWithLLM(ctx, chatModel, prompt, 4500)
+  }
   return generateImage(ctx, {
     model,
-    prompt: buildShotPrompt(shot, sd),
+    prompt,
     aspect,
     negative: DEFAULT_NEGATIVE_PROMPT,
     referenceImage: scene?.referenceImage,
@@ -60,11 +68,16 @@ export async function generateEndFrame(
   sd: ScriptData | null,
   model: ImageModelConfig,
   aspect: AspectRatio,
+  chatModel?: ChatModelConfig,
 ): Promise<string> {
   const start = shot.keyframes.find((k) => k.type === 'start')
+  let prompt = `${buildShotPrompt(shot, sd)}, ending state of the action`
+  if (chatModel && prompt.length > 4500) {
+    prompt = await compressPromptWithLLM(ctx, chatModel, prompt, 4500)
+  }
   return generateImage(ctx, {
     model,
-    prompt: `${buildShotPrompt(shot, sd)}, ending state of the action`,
+    prompt,
     aspect,
     negative: DEFAULT_NEGATIVE_PROMPT,
     referenceImage: start?.imageUrl,

@@ -4,9 +4,10 @@
  */
 import { useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Film, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Download, Film, Plus, Rocket, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { exportProjectData, importProjectData } from '@/services/transferService'
+import { loadDemoProject } from '@/services/demoData'
 import { downloadBlob } from '@/services/utils'
 import { Onboarding } from './Onboarding'
 import {
@@ -103,6 +104,12 @@ export function Dashboard() {
     await removeProject(projectId)
   }
 
+  const handleLoadDemo = async () => {
+    const id = await loadDemoProject()
+    await refreshProjects()
+    navigate(`/workspace/${id}`)
+  }
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl p-8">
@@ -122,6 +129,9 @@ export function Dashboard() {
               className="hidden"
               onChange={handleImport}
             />
+            <Button variant="outline" onClick={handleLoadDemo}>
+              <Rocket className="h-4 w-4" /> 加载示例
+            </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4" /> 导入
             </Button>
@@ -185,7 +195,8 @@ export function Dashboard() {
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        title="删除项目"
+                        title={p.isDemo ? '示例项目不可删除' : '删除项目'}
+                        disabled={p.isDemo}
                         onClick={(e) => handleDelete(e, p.id, p.title)}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-danger" />

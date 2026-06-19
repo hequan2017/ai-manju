@@ -145,7 +145,7 @@ export function ShotCard({ shot }: { shot: Shot }) {
               loading={busy.dubbing}
               onClick={() => generateDubbing(dubText, dubMode)}
             >
-              <Wand2 className="h-3.5 w-3.5" /> 生成配音
+              <Wand2 className="h-3.5 w-3.5" /> {shot.dubbing?.audioUrl ? '重新配音' : '生成配音'}
             </Button>
           </div>
           {shot.dubbing?.audioUrl && (

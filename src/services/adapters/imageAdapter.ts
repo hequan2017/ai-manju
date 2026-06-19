@@ -124,7 +124,7 @@ async function generateWithGemini(
   const provider = resolveProvider(ctx, opts.model.providerId)
   const endpoint =
     opts.model.endpoint ?? `/v1beta/models/${opts.model.modelName}:generateContent`
-  const url = `${buildUrl(provider.baseUrl, endpoint)}?key=${encodeURIComponent(provider.apiKey)}`
+  const url = buildUrl(provider.baseUrl, endpoint)
 
   const parts: Array<Record<string, unknown>> = [{ text: opts.prompt }]
   // 图生图：在 parts 前置参考图
@@ -138,12 +138,8 @@ async function generateWithGemini(
     contents: [{ parts }],
     generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
   })
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-    signal: opts.signal,
-  })
+  // 统一 Bearer 鉴权（new-api 对 /v1beta/* 走 TokenAuth）+ JSON 提交
+  const res = await request(url, provider.apiKey, { body, signal: opts.signal })
   await ensureOk(res, '图像生成(Gemini)')
   const data = await parseJsonResponse<{
     candidates?: {

@@ -100,6 +100,19 @@ export function aspectToSize(aspect: string): string {
   }
 }
 
+/** 横竖屏比例映射为视频尺寸（用于视频生成参数） */
+export function aspectToVideoSize(aspect: string): string {
+  switch (aspect) {
+    case '9:16':
+      return '1080x1920'
+    case '1:1':
+      return '1080x1080'
+    case '16:9':
+    default:
+      return '1920x1080'
+  }
+}
+
 /** data url 解析为字节数组与 MIME（用于导出打包、multipart 上传） */
 export function dataURLToBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
   const [meta, b64] = dataUrl.split(',')

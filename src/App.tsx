@@ -2,7 +2,6 @@
  * 应用根组件
  * —— Provider 组装 + new-api 登录守卫 + 路由。
  */
-import { type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AlertProvider } from '@/contexts/AlertContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
@@ -17,7 +16,7 @@ import { Workspace } from '@/components/Workspace'
 import { Spinner } from '@/components/ui'
 
 function AppShell() {
-  const { session, initializing } = useAuth()
+  const { initializing } = useAuth()
   const { pathname } = useLocation()
 
   if (initializing) {
@@ -28,18 +27,18 @@ function AppShell() {
     )
   }
 
+  // 不强制登录：未登录可浏览/编辑，仅在 AI 调用时验证凭证
   const isLogin = pathname === '/login'
-  const guard = (el: ReactNode) => (session ? el : <Navigate to="/login" replace />)
 
   return (
     <div className="flex h-full flex-col">
-      {!isLogin && session && <TopBar />}
+      {!isLogin && <TopBar />}
       <main className="flex-1 overflow-hidden">
         <Routes>
-          <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
-          <Route path="/" element={guard(<Dashboard />)} />
-          <Route path="/settings" element={guard(<Settings />)} />
-          <Route path="/workspace/:projectId" element={guard(<Workspace />)} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/workspace/:projectId" element={<Workspace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -17,6 +17,7 @@ import { generateNineGridImage, generateNineGridPanels, resolveGridLayout } from
 import { createKeyframe, createVideoInterval } from '@/services/factory'
 import { clone } from '@/services/utils'
 import { persistVideoToOPFS } from '@/services/videoStorageService'
+import { runKeyframePreflight, runVideoPreflight } from '@/services/promptLintService'
 import type { Episode, Shot, StoryboardGridPanelCount } from '@/types'
 
 type TaskKey = 'start' | 'end' | 'video' | 'dubbing' | 'ninegrid'
@@ -72,6 +73,8 @@ export function useShotActions(shot: Shot) {
   const generateStart = () =>
     run('start', async () => {
       if (!adapterCtx || !state) throw new Error('模型未就绪')
+      const preflight = runKeyframePreflight(shot)
+      if (!preflight.canProceed) throw new Error(preflight.issues.find((i) => i.level === 'error')?.message ?? '首帧提示词不达标')
       const kf = shot.keyframes.find((k) => k.type === 'start') ?? shot.keyframes[0]
       if (!kf) throw new Error('缺少首帧槽位')
       patchShot((s) => ({
@@ -84,6 +87,7 @@ export function useShotActions(shot: Shot) {
         sd,
         state.currentConfig.imageModel,
         state.defaultAspectRatio,
+        state.currentConfig.chatModel,
       )
       patchShot((s) => ({
         ...s,
@@ -112,6 +116,7 @@ export function useShotActions(shot: Shot) {
         sd,
         state.currentConfig.imageModel,
         state.defaultAspectRatio,
+        state.currentConfig.chatModel,
       )
       patchShot((s) => ({
         ...s,
@@ -126,6 +131,8 @@ export function useShotActions(shot: Shot) {
       if (!adapterCtx || !state) throw new Error('模型未就绪')
       const start = shot.keyframes.find((k) => k.type === 'start')
       if (!start?.imageUrl) throw new Error('请先生成首帧')
+      const preflight = runVideoPreflight(shot)
+      if (!preflight.canProceed) throw new Error(preflight.issues.find((i) => i.level === 'error')?.message ?? '视频生成条件不满足')
       setVideoStatus('提交任务…')
       patchShot((s) => ({
         ...s,
