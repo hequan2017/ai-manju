@@ -8,16 +8,22 @@ import {
   Camera,
   ChevronLeft,
   Clapperboard,
+  Copy,
   Download,
   Image as ImageIcon,
+  Library,
+  Pencil,
   Plus,
   ScrollText,
   Sliders,
+  Trash2,
 } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
+import { useI18n } from '@/contexts/I18nContext'
 import type { EpisodeStage } from '@/types'
 import { Badge, Button, EmptyState, Select, Spinner } from './ui'
 import { AssetSyncBanner } from './AssetSyncBanner'
+import { ProjectLibraryModal } from './ProjectLibraryModal'
 import { RenderLogsModal } from './RenderLogsModal'
 import { StageAssets } from './stages/StageAssets'
 import { StageDirector } from './stages/StageDirector'
@@ -25,12 +31,12 @@ import { StageExport } from './stages/StageExport'
 import { StagePrompts } from './stages/StagePrompts'
 import { StageScript } from './stages/StageScript'
 
-const STAGES: { key: EpisodeStage; label: string; icon: typeof Clapperboard }[] = [
-  { key: 'script', label: '剧本', icon: Clapperboard },
-  { key: 'assets', label: '资产', icon: ImageIcon },
-  { key: 'director', label: '导演台', icon: Camera },
-  { key: 'export', label: '导出', icon: Download },
-  { key: 'prompts', label: '提示词', icon: Sliders },
+const STAGES: { key: EpisodeStage; labelKey: string; icon: typeof Clapperboard }[] = [
+  { key: 'script', labelKey: 'stage.script', icon: Clapperboard },
+  { key: 'assets', labelKey: 'stage.assets', icon: ImageIcon },
+  { key: 'director', labelKey: 'stage.director', icon: Camera },
+  { key: 'export', labelKey: 'stage.export', icon: Download },
+  { key: 'prompts', labelKey: 'stage.prompts', icon: Sliders },
 ]
 
 export function Workspace() {
@@ -47,12 +53,18 @@ export function Workspace() {
     selectSeason,
     selectEpisode,
     createSeason,
+    removeSeason,
+    updateSeason,
     createEpisode,
     patchEpisode,
+    removeEpisode,
+    duplicateEpisode,
   } = useProject()
+  const { t } = useI18n()
 
   const [stage, setStage] = useState<EpisodeStage>('script')
   const [openLogs, setOpenLogs] = useState(false)
+  const [openLibrary, setOpenLibrary] = useState(false)
 
   useEffect(() => {
     if (projectId) void selectProject(projectId)
@@ -78,11 +90,11 @@ export function Workspace() {
     return (
       <div className="p-8">
         <EmptyState
-          title="项目不存在"
-          description="该项目可能已被删除。"
+          title={t('ws.notExist')}
+          description={t('ws.deletedDesc')}
           action={
             <Button variant="primary" onClick={() => navigate('/')}>
-              <ChevronLeft className="h-4 w-4" /> 返回项目列表
+              <ChevronLeft className="h-4 w-4" /> {t('ws.back')}
             </Button>
           }
         />
@@ -99,7 +111,7 @@ export function Workspace() {
             className="mb-2 flex items-center gap-1 text-xs text-text-subtle hover:text-text"
             onClick={() => navigate('/')}
           >
-            <ChevronLeft className="h-3 w-3" /> 项目列表
+            <ChevronLeft className="h-3 w-3" /> {t('ws.back')}
           </button>
           <h2 className="truncate font-semibold text-text">{currentProject.title}</h2>
           {currentProject.description && (
@@ -121,39 +133,97 @@ export function Workspace() {
             <Button
               size="icon"
               variant="ghost"
-              title="新建季"
+              title={t('ws.newSeason')}
               onClick={() => void createSeason()}
             >
               <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              title={t('ws.renameSeason')}
+              disabled={!currentSeason}
+              onClick={() => {
+                if (!currentSeason) return
+                const name = prompt(t('ws.renameSeasonPrompt'), currentSeason.title)
+                if (name && name.trim()) void updateSeason(currentSeason.id, name.trim())
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              title={t('ws.deleteSeason')}
+              disabled={!currentSeason || seasons.length <= 1}
+              onClick={() => {
+                if (currentSeason && confirm(t('ws.deleteSeasonConfirmTitle', { title: currentSeason.title }))) {
+                  void removeSeason(currentSeason.id)
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-danger" />
             </Button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
           <div className="mb-1 flex items-center justify-between px-2">
-            <span className="text-xs font-medium text-text-muted">集（{episodes.length}）</span>
+            <span className="text-xs font-medium text-text-muted">{t('ws.episodes')}（{episodes.length}）</span>
             <Button size="sm" variant="ghost" onClick={() => void createEpisode()}>
-              <Plus className="h-3.5 w-3.5" /> 新建
+              <Plus className="h-3.5 w-3.5" /> {t('ws.newEpisode')}
             </Button>
           </div>
           {episodes.map((ep) => (
-            <button
+            <div
               key={ep.id}
               onClick={() => selectEpisode(ep.id)}
               className={[
-                'mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm',
+                'group mb-1 flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-sm',
                 currentEpisode?.id === ep.id
                   ? 'bg-accent-soft text-accent'
                   : 'text-text-muted hover:bg-surface-2 hover:text-text',
               ].join(' ')}
             >
-              <span className="truncate">
+              <span
+                className="truncate"
+                title={t('ws.episodeDoubleRename')}
+                onDoubleClick={() => {
+                  const name = prompt(t('ws.episodeNamePrompt'), ep.title)
+                  if (name && name.trim()) patchEpisode(ep.id, (e) => ({ ...e, title: name.trim() }))
+                }}
+              >
                 <span className="font-mono text-xs">EP{String(ep.episodeNumber).padStart(2, '0')}</span>{' '}
                 {ep.title}
               </span>
-              {ep.scriptData && <Badge tone="success">已拆解</Badge>}
-            </button>
+              <span className="flex items-center gap-1">
+                {ep.scriptData && <Badge tone="success">{t('common.parsed')}</Badge>}
+                <button
+                  title={t('ws.duplicateEpisode')}
+                  onClick={(e) => { e.stopPropagation(); duplicateEpisode(ep.id) }}
+                  className="hidden h-5 w-5 items-center justify-center rounded text-text-subtle hover:bg-surface-2 hover:text-text group-hover:flex"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+                <button
+                  title={t('ws.deleteEpisode')}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (confirm(t('ws.deleteEpisodeConfirmTitle', { title: ep.title }))) removeEpisode(ep.id)
+                  }}
+                  className="hidden h-5 w-5 items-center justify-center rounded text-text-subtle hover:bg-danger/20 hover:text-danger group-hover:flex"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </span>
+            </div>
           ))}
+        </div>
+
+        <div className="border-t border-border p-2">
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setOpenLibrary(true)}>
+            <Library className="h-4 w-4" /> {t('ws.library')}
+          </Button>
         </div>
       </aside>
 
@@ -176,7 +246,7 @@ export function Workspace() {
                         : 'border-transparent text-text-muted hover:text-text',
                     ].join(' ')}
                   >
-                    <Icon className="h-4 w-4" /> {s.label}
+                    <Icon className="h-4 w-4" /> {t(s.labelKey)}
                   </button>
                 )
               })}
@@ -184,10 +254,10 @@ export function Workspace() {
                 size="sm"
                 variant="ghost"
                 className="ml-auto"
-                title="渲染日志"
+                title={t('ws.renderLogs')}
                 onClick={() => setOpenLogs(true)}
               >
-                <ScrollText className="h-4 w-4" /> 日志
+                <ScrollText className="h-4 w-4" /> {t('common.logs')}
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto p-6">
@@ -198,14 +268,15 @@ export function Workspace() {
               {stage === 'export' && <StageExport />}
               {stage === 'prompts' && <StagePrompts />}
               <RenderLogsModal open={openLogs} onClose={() => setOpenLogs(false)} episode={currentEpisode} />
+              <ProjectLibraryModal open={openLibrary} onClose={() => setOpenLibrary(false)} />
             </div>
           </>
         ) : (
           <div className="p-8">
             <EmptyState
               icon={<Clapperboard className="h-10 w-10" />}
-              title="选择一集开始创作"
-              description="在左侧选择已有集，或点击「新建」创建一集，进入剧本创作阶段。"
+              title={t('ws.selectEpisode')}
+              description={t('ws.selectEpisode.desc')}
             />
           </div>
         )}

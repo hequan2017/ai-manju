@@ -4,16 +4,18 @@
  *   美术指导锚点注入提示词，保证全片视觉一致性。
  */
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react'
-import { AlertTriangle, ImageOff, Loader2, MapPin, Shirt, Sparkles, Upload, User, Wand2 } from 'lucide-react'
+import { AlertTriangle, ImageOff, Loader2, MapPin, Pencil, Shirt, Sparkles, Upload, User, Wand2 } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useAdapterContext, useModel } from '@/contexts/ModelContext'
 import { useAlert } from '@/contexts/AlertContext'
+import { useI18n } from '@/contexts/I18nContext'
 import {
   generateAssetImage,
   type AssetImageKind,
 } from '@/services/assetService'
 import { generateAllCharacterPrompts } from '@/services/visualService'
 import { clone } from '@/services/utils'
+import { appendPromptVersion } from '@/services/promptVersionService'
 import type { Character, Prop, Scene, VisualAsset } from '@/types'
 import { WardrobeModal } from '../WardrobeModal'
 import {
@@ -32,20 +34,21 @@ export function StageAssets() {
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const { alert } = useAlert()
+  const { t } = useI18n()
   const [batchKind, setBatchKind] = useState<AssetImageKind | null>(null)
   const [wardrobeChar, setWardrobeChar] = useState<Character | null>(null)
   const [enriching, setEnriching] = useState(false)
 
   if (!currentEpisode) {
-    return <EmptyState title="请先选择一集" />
+    return <EmptyState title={t('common.emptyEpisode')} />
   }
   const sd = currentEpisode.scriptData
   if (!sd) {
     return (
       <EmptyState
         icon={<Sparkles className="h-10 w-10" />}
-        title="还没有剧本结构"
-        description="请先在「剧本」阶段完成 AI 拆解，再生成资产定妆图。"
+        title={t('assets.noScript')}
+        description={t('assets.noScriptDesc')}
       />
     )
   }
@@ -78,7 +81,7 @@ export function StageAssets() {
 
   const generateOne = async (kind: AssetImageKind, asset: VisualAsset) => {
     if (!adapterCtx || !imageModel) {
-      setError('图像模型未就绪，请先在「模型配置」中配置')
+      setError(t('assets.imageNotReady'))
       return
     }
     setError(null)
@@ -116,6 +119,14 @@ export function StageAssets() {
     setWardrobeChar(next)
   }
 
+  const handleEditPrompt = (kind: AssetImageKind, asset: VisualAsset, prompt: string) => {
+    patchAsset(kind, asset.id, (a) => ({
+      ...a,
+      visualPrompt: prompt,
+      promptVersions: appendPromptVersion(a.promptVersions, prompt, 'manual-edit'),
+    }))
+  }
+
   /** AI 批量补全角色视觉提示词（6点结构化，风格统一） */
   const handleEnrichCharacters = async () => {
     if (!adapterCtx || !state || !sd) return
@@ -134,7 +145,7 @@ export function StageAssets() {
         )
         return { ...e, scriptData: next }
       })
-      alert('角色提示词已补全', 'success')
+      alert(t('assets.enrichDone'), 'success')
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err), 'danger')
     } finally {
@@ -164,20 +175,20 @@ export function StageAssets() {
 
       {!imageModel && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
-          尚未配置图像模型，请前往「模型配置」。
+          {t('assets.noImageModel')}
         </div>
       )}
 
       {sd.characters.length > 0 && (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" loading={enriching} onClick={handleEnrichCharacters}>
-            <Wand2 className="h-4 w-4" /> AI 补全角色提示词
+            <Wand2 className="h-4 w-4" /> {t('assets.enrich')}
           </Button>
         </div>
       )}
 
       <AssetSection<Character>
-        title="角色定妆"
+        title={t('assets.charTitle')}
         icon={<User className="h-4 w-4 text-accent" />}
         kind="character"
         assets={sd.characters}
@@ -187,11 +198,12 @@ export function StageAssets() {
         onGenerate={generateOne}
         onBatch={generateBatch}
         onUploadImage={handleUploadImage}
+        onEditPrompt={handleEditPrompt}
         onVariations={(a) => setWardrobeChar(a as Character)}
       />
 
       <AssetSection<Scene>
-        title="场景概念"
+        title={t('assets.sceneTitle')}
         icon={<MapPin className="h-4 w-4 text-accent" />}
         kind="scene"
         assets={sd.scenes}
@@ -201,11 +213,12 @@ export function StageAssets() {
         onGenerate={generateOne}
         onBatch={generateBatch}
         onUploadImage={handleUploadImage}
+        onEditPrompt={handleEditPrompt}
       />
 
       {sd.props.length > 0 && (
         <AssetSection<Prop>
-          title="道具参考"
+          title={t('assets.propTitle')}
           icon={<Sparkles className="h-4 w-4 text-accent" />}
           kind="prop"
           assets={sd.props}
@@ -215,6 +228,7 @@ export function StageAssets() {
           onGenerate={generateOne}
           onBatch={generateBatch}
         onUploadImage={handleUploadImage}
+        onEditPrompt={handleEditPrompt}
         />
       )}
 
@@ -242,6 +256,7 @@ interface AssetSectionProps<T extends VisualAsset> {
   onBatch: (kind: AssetImageKind) => void
   onUploadImage: (kind: AssetImageKind, asset: VisualAsset, dataUrl: string) => void
   onVariations?: (asset: VisualAsset) => void
+  onEditPrompt: (kind: AssetImageKind, asset: VisualAsset, prompt: string) => void
 }
 
 function AssetSection<T extends VisualAsset>({
@@ -256,12 +271,14 @@ function AssetSection<T extends VisualAsset>({
   onBatch,
   onUploadImage,
   onVariations,
+  onEditPrompt,
 }: AssetSectionProps<T>) {
+  const { t } = useI18n()
   return (
     <Card>
       <CardHeader className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-sm font-medium text-text">
-          {icon} {title}（{assets.length}）
+          {icon} {t('assets.titleCount', { title, n: assets.length })}
         </span>
         <Button
           size="sm"
@@ -269,7 +286,7 @@ function AssetSection<T extends VisualAsset>({
           loading={batchKind === kind}
           onClick={() => onBatch(kind)}
         >
-          <Wand2 className="h-4 w-4" /> 批量生成
+          <Wand2 className="h-4 w-4" /> {t('assets.batch')}
         </Button>
       </CardHeader>
       <CardBody>
@@ -285,6 +302,7 @@ function AssetSection<T extends VisualAsset>({
                 onGenerate={() => onGenerate(kind, asset)}
                 onUploadImage={(dataUrl) => onUploadImage(kind, asset, dataUrl)}
                 onVariations={onVariations ? () => onVariations(asset) : undefined}
+                onEditPrompt={(prompt) => onEditPrompt(kind, asset, prompt)}
               />
             )
           })}
@@ -301,6 +319,7 @@ function AssetCard({
   onGenerate,
   onUploadImage,
   onVariations,
+  onEditPrompt,
 }: {
   asset: VisualAsset
   aspect: string
@@ -308,8 +327,12 @@ function AssetCard({
   onGenerate: () => void
   onUploadImage?: (dataUrl: string) => void
   onVariations?: () => void
+  onEditPrompt?: (prompt: string) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [editingPrompt, setEditingPrompt] = useState(false)
+  const [promptDraft, setPromptDraft] = useState('')
+  const { t } = useI18n()
   const aspectClass = aspect === '9:16' ? 'aspect-[9/16]' : aspect === '1:1' ? 'aspect-square' : 'aspect-video'
   const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -330,11 +353,60 @@ function AssetCard({
           </div>
         )}
         {asset.status === 'failed' && (
-          <Badge tone="danger" className="absolute right-1 top-1">失败</Badge>
+          <Badge tone="danger" className="absolute right-1 top-1">{t('assets.failed')}</Badge>
         )}
       </div>
       <div className="p-2.5">
         <div className="truncate text-xs font-medium text-text">{asset.name}</div>
+        {editingPrompt ? (
+          <div className="mt-1 space-y-1">
+            <textarea
+              rows={2}
+              value={promptDraft}
+              onChange={(e) => setPromptDraft(e.target.value)}
+              className="w-full resize-y rounded border border-border bg-bg px-1 py-0.5 text-[10px] text-text focus:border-accent focus:outline-none"
+            />
+            <div className="flex gap-1">
+              <Button size="sm" variant="ghost" className="flex-1" onClick={() => setEditingPrompt(false)}>{t('common.cancel')}</Button>
+              <Button size="sm" variant="primary" className="flex-1" onClick={() => { onEditPrompt?.(promptDraft); setEditingPrompt(false) }}>{t('common.save')}</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {asset.visualPrompt && (
+              <p className="mt-0.5 line-clamp-2 font-mono text-[10px] text-text-subtle">{asset.visualPrompt}</p>
+            )}
+            {onEditPrompt && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-1 w-full"
+                onClick={() => { setEditingPrompt(true); setPromptDraft(asset.visualPrompt ?? '') }}
+              >
+                <Pencil className="h-3 w-3" /> {t('assets.editPrompt')}
+              </Button>
+            )}
+            {asset.promptVersions && asset.promptVersions.length > 0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer text-[10px] text-text-subtle">
+                  {t('assets.history')} ({asset.promptVersions.length})
+                </summary>
+                <div className="mt-1 max-h-24 space-y-0.5 overflow-y-auto">
+                  {[...asset.promptVersions].reverse().map((v) => (
+                    <button
+                      key={v.id}
+                      className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] text-text-muted hover:bg-surface-2"
+                      title={v.prompt}
+                      onClick={() => onEditPrompt?.(v.prompt)}
+                    >
+                      {v.source}
+                    </button>
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
         <Button
           size="sm"
           variant={asset.referenceImage ? 'ghost' : 'primary'}
@@ -342,7 +414,7 @@ function AssetCard({
           loading={busy}
           onClick={onGenerate}
         >
-          {asset.referenceImage ? '重新生成' : '生成参考图'}
+          {asset.referenceImage ? t('assets.regenRef') : t('assets.genRef')}
         </Button>
         {onUploadImage && (
           <>
@@ -353,13 +425,13 @@ function AssetCard({
               className="mt-1 w-full"
               onClick={() => fileRef.current?.click()}
             >
-              <Upload className="h-3.5 w-3.5" /> 上传图片
+              <Upload className="h-3.5 w-3.5" /> {t('assets.upload')}
             </Button>
           </>
         )}
         {onVariations && (
           <Button size="sm" variant="ghost" className="mt-1 w-full" onClick={onVariations}>
-            <Shirt className="h-3.5 w-3.5" /> 造型
+            <Shirt className="h-3.5 w-3.5" /> {t('assets.wardrobe')}
             {(asset as Character).variations?.length
               ? ` (${(asset as Character).variations.length})`
               : ''}

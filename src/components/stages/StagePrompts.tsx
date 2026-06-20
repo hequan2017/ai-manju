@@ -12,12 +12,14 @@ import {
   type PromptTemplateConfig,
 } from '@/services/promptTemplateService'
 import { useAlert } from '@/contexts/AlertContext'
+import { useI18n } from '@/contexts/I18nContext'
 import { Badge, Card, CardBody, CardHeader, Label, Textarea } from '../ui'
 
 const KV_KEY = 'promptTemplates'
 
 export function StagePrompts() {
   const { alert } = useAlert()
+  const { t } = useI18n()
   const [tpl, setTpl] = useState<PromptTemplateConfig>(DEFAULT_PROMPT_TEMPLATES)
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function StagePrompts() {
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text)
-    alert('已复制', 'success')
+    alert(t('prompts.copied'), 'success')
   }
 
   return (
@@ -42,7 +44,7 @@ export function StagePrompts() {
       <Card>
         <CardHeader>
           <span className="flex items-center gap-2 text-sm font-medium text-text">
-            <Camera className="h-4 w-4 text-accent" /> 运镜参考库（点击复制）
+            <Camera className="h-4 w-4 text-accent" /> {t('prompts.cameraLib')}
           </span>
         </CardHeader>
         <CardBody>
@@ -71,28 +73,28 @@ export function StagePrompts() {
       <Card>
         <CardHeader>
           <span className="flex items-center gap-2 text-sm font-medium text-text">
-            <Settings2 className="h-4 w-4 text-accent" /> 可编辑提示词模板
+            <Settings2 className="h-4 w-4 text-accent" /> {t('prompts.template')}
           </span>
         </CardHeader>
         <CardBody className="space-y-4">
           <div>
-            <Label>分镜规划系统提示词</Label>
+            <Label>{t('prompts.tpl.storyboard')}</Label>
             <Textarea rows={2} value={tpl.storyboardSystem} onChange={(e) => update({ storyboardSystem: e.target.value })} />
           </div>
           <div>
-            <Label>关键帧一致性引导词（注入每张关键帧）</Label>
+            <Label>{t('prompts.tpl.keyframe')}</Label>
             <Textarea rows={2} value={tpl.keyframeGuide} onChange={(e) => update({ keyframeGuide: e.target.value })} />
           </div>
           <div>
-            <Label>视频提示词前缀</Label>
+            <Label>{t('prompts.tpl.videoPrefix')}</Label>
             <Textarea rows={2} value={tpl.videoPromptPrefix} onChange={(e) => update({ videoPromptPrefix: e.target.value })} />
           </div>
           <div>
-            <Label>默认负面提示词</Label>
+            <Label>{t('prompts.tpl.negative')}</Label>
             <Textarea rows={2} value={tpl.negativePrompt} onChange={(e) => update({ negativePrompt: e.target.value })} />
           </div>
           <p className="flex items-center gap-1 text-xs text-text-subtle">
-            <Check className="h-3 w-3 text-success" /> 模板自动保存于本地，将在后续生成流程中注入。
+            <Check className="h-3 w-3 text-success" /> {t('prompts.saved')}
           </p>
         </CardBody>
       </Card>

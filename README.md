@@ -248,6 +248,19 @@ docker compose down
 
 可选附加：`docker compose --profile proxy up -d`（媒体代理）、`--profile mysql up -d`（MySQL 替代 SQLite）。
 
+### 部署到 GitHub Pages
+
+仓库已内置 `.github/workflows/deploy.yml`，推送到 `main` 即自动构建并部署：
+
+1. **开启 Pages**：GitHub 仓库 → Settings → Pages → Source 选「GitHub Actions」
+2. **推送**：`git push origin main`，workflow 自动 build（`base` 设为仓库名子路径）+ 部署
+3. **访问**：`https://<你的用户名>.github.io/<仓库名>/`
+
+> SPA 路由通过 `404.html` 回退；`BrowserRouter` 已用 `import.meta.env.BASE_URL` 作为 basename 自动适配子路径。
+> 纯前端应用，部署到 GitHub Pages 后数据存浏览器本地（IndexedDB）；如需后端 AI 网关，单独部署 new-api 并在登录页填其地址。
+
+**其他静态托管**（无需配置，BrowserRouter 直接可用）：Vercel / Netlify / Cloudflare Pages —— 连接仓库自动部署即可。
+
 ### 后端 new-api 部署与对接
 
 本平台所有**模型请求、用户登录、令牌管理**均通过 **new-api** 网关（OpenAI 兼容 + 用户系统）：

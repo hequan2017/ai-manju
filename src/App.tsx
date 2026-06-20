@@ -5,6 +5,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AlertProvider } from '@/contexts/AlertContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { I18nProvider } from '@/contexts/I18nContext'
 import { ModelProvider } from '@/contexts/ModelContext'
 import { ProjectProvider } from '@/contexts/ProjectContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -49,15 +50,17 @@ function AppShell() {
 export default function App() {
   return (
     <ThemeProvider>
-      <ModelProvider>
-        <AuthProvider>
-          <ProjectProvider>
-            <AlertProvider>
-              <AppShell />
-            </AlertProvider>
-          </ProjectProvider>
-        </AuthProvider>
-      </ModelProvider>
+      <I18nProvider>
+        <ModelProvider>
+          <AuthProvider>
+            <ProjectProvider>
+              <AlertProvider>
+                <AppShell />
+              </AlertProvider>
+            </ProjectProvider>
+          </AuthProvider>
+        </ModelProvider>
+      </I18nProvider>
     </ThemeProvider>
   )
 }

@@ -5,11 +5,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogIn, UserPlus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useI18n } from '@/contexts/I18nContext'
 import { Button, Card, CardBody, Input, Label } from './ui'
 
 export function LoginPage() {
   const { baseUrl, setBaseUrl, login, register } = useAuth()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [url, setUrl] = useState(baseUrl)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -19,7 +21,7 @@ export function LoginPage() {
 
   const submit = async () => {
     if (!url.trim() || !username.trim() || !password.trim()) {
-      setError('请填写完整信息')
+      setError(t('login.fillAll'))
       return
     }
     setBusy(true)
@@ -41,8 +43,8 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardBody className="space-y-4">
           <div className="text-center">
-            <h1 className="text-lg font-semibold text-text">AI 漫剧平台</h1>
-            <p className="text-xs text-text-muted">登录 new-api 以调用模型</p>
+            <h1 className="text-lg font-semibold text-text">{t('login.title')}</h1>
+            <p className="text-xs text-text-muted">{t('login.desc')}</p>
           </div>
 
           {error && (
@@ -52,7 +54,7 @@ export function LoginPage() {
           )}
 
           <div>
-            <Label>new-api 服务地址</Label>
+            <Label>{t('login.url')}</Label>
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -61,11 +63,11 @@ export function LoginPage() {
             />
           </div>
           <div>
-            <Label>用户名</Label>
+            <Label>{t('login.username')}</Label>
             <Input value={username} onChange={(e) => setUsername(e.target.value)} />
           </div>
           <div>
-            <Label>密码</Label>
+            <Label>{t('login.password')}</Label>
             <Input
               type="password"
               value={password}
@@ -76,18 +78,18 @@ export function LoginPage() {
 
           <Button variant="primary" className="w-full" loading={busy} onClick={submit}>
             {mode === 'login' ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-            {mode === 'login' ? '登录' : '注册并登录'}
+            {mode === 'login' ? t('login.submit') : t('login.register')}
           </Button>
 
           <button
             className="w-full text-center text-xs text-text-muted hover:text-text"
             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
           >
-            {mode === 'login' ? '没有账号？去注册' : '已有账号？去登录'}
+            {mode === 'login' ? t('login.toRegister') : t('login.toLogin')}
           </button>
 
           <p className="text-center text-[10px] text-text-subtle">
-            登录后将自动获取你的 API Key 并用于模型调用
+            {t('login.hint')}
           </p>
         </CardBody>
       </Card>

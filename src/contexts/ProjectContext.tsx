@@ -31,7 +31,7 @@ import {
   createProject as buildProject,
   createSeason as buildSeason,
 } from '@/services/factory'
-import { now } from '@/services/utils'
+import { clone, now, uid } from '@/services/utils'
 
 interface CreateEpisodeInput {
   title?: string
@@ -59,11 +59,13 @@ interface ProjectContextValue {
 
   createSeason: (title?: string) => Promise<Season | null>
   removeSeason: (id: string) => Promise<void>
+  updateSeason: (id: string, title: string) => Promise<void>
 
   createEpisode: (input?: CreateEpisodeInput) => Promise<Episode | null>
   /** 高频编辑：基于最新 db 状态应用变更并持久化 */
   patchEpisode: (id: string, mutator: (e: Episode) => Episode) => Promise<void>
   removeEpisode: (id: string) => Promise<void>
+  duplicateEpisode: (id: string) => Promise<void>
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
@@ -211,6 +213,17 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     [seasonId, projectId, selectSeason, loadSeasons],
   )
 
+  /** 重命名季 */
+  const updateSeason = useCallback(
+    async (id: string, title: string) => {
+      const season = seasons.find((s) => s.id === id)
+      if (!season) return
+      await saveSeason({ ...season, title, lastModified: now() })
+      if (projectId) await loadSeasons(projectId)
+    },
+    [seasons, projectId, loadSeasons],
+  )
+
   // ---- 集 CRUD ----
   const createEpisode = useCallback(
     async (input?: CreateEpisodeInput) => {
@@ -251,6 +264,26 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     [episodeId, seasonId, selectEpisode, loadEpisodes],
   )
 
+  /** 复制集（新 id，置于当前季末尾） */
+  const duplicateEpisode = useCallback(
+    async (id: string) => {
+      const src = await getEpisode(id)
+      if (!src || !seasonId) return
+      const number = episodes.length + 1
+      const copy: Episode = {
+        ...clone(src),
+        id: uid(),
+        episodeNumber: number,
+        title: `${src.title} 副本`,
+        createdAt: now(),
+        lastModified: now(),
+      }
+      await saveEpisode(copy)
+      await loadEpisodes(seasonId)
+    },
+    [seasonId, episodes.length, loadEpisodes],
+  )
+
   const value = useMemo<ProjectContextValue>(
     () => ({
       projects,
@@ -270,9 +303,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       removeProject,
       createSeason,
       removeSeason,
+      updateSeason,
       createEpisode,
       patchEpisode,
       removeEpisode,
+      duplicateEpisode,
     }),
     [
       projects,
@@ -292,9 +327,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       removeProject,
       createSeason,
       removeSeason,
+      updateSeason,
       createEpisode,
       patchEpisode,
       removeEpisode,
+      duplicateEpisode,
     ],
   )
 

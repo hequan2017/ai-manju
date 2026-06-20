@@ -15,7 +15,7 @@ import {
 } from '@/services/shotActions'
 import { generateNineGridImage, generateNineGridPanels, resolveGridLayout } from '@/services/shotService'
 import { createKeyframe, createVideoInterval } from '@/services/factory'
-import { clone } from '@/services/utils'
+import { clone, uid } from '@/services/utils'
 import { persistVideoToOPFS } from '@/services/videoStorageService'
 import { runKeyframePreflight, runVideoPreflight } from '@/services/promptLintService'
 import type { Episode, Shot, StoryboardGridPanelCount } from '@/types'
@@ -198,17 +198,42 @@ export function useShotActions(shot: Shot) {
       }))
     })
 
+  /** 删除当前镜头 */
+  const removeShot = () => {
+    if (!currentEpisode) return
+    patchEpisode(currentEpisode.id, (e) => ({
+      ...e,
+      shots: e.shots.filter((s) => s.id !== shot.id).map((s, i) => ({ ...s, index: i + 1 })),
+    }))
+  }
+
+  /** 复制当前镜头（插入到紧随其后，重排序号） */
+  const duplicateShot = () => {
+    if (!currentEpisode) return
+    patchEpisode(currentEpisode.id, (e) => {
+      const idx = e.shots.findIndex((s) => s.id === shot.id)
+      if (idx < 0) return e
+      const copy = { ...clone(shot), id: uid() }
+      const shots = [...e.shots]
+      shots.splice(idx + 1, 0, copy)
+      return { ...e, shots: shots.map((s, i) => ({ ...s, index: i + 1 })) }
+    })
+  }
+
   return {
     sd,
     ready,
     busy,
     videoStatus,
     error,
+    patchShot,
     supportsEndFrame: state ? videoSupportsEndFrame(state.currentConfig.videoModel.type) : false,
     generateStart,
     generateEnd,
     generateVideoClip,
     generateDubbing,
     generateNineGrid,
+    duplicateShot,
+    removeShot,
   }
 }

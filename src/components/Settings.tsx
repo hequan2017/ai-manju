@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useModel } from '@/contexts/ModelContext'
+import { useI18n } from '@/contexts/I18nContext'
 import { NewApiAccountCard } from './NewApiAccountCard'
 import {
   markDefaultProvider,
@@ -67,6 +68,7 @@ function CommitInput({
 
 export function Settings() {
   const { state, update } = useModel()
+  const { t } = useI18n()
 
   if (!state) {
     return (
@@ -84,10 +86,10 @@ export function Settings() {
     <div className="mx-auto h-full max-w-4xl space-y-6 overflow-y-auto p-6">
       <header>
         <h1 className="flex items-center gap-2 text-xl font-semibold text-text">
-          <Server className="h-5 w-5 text-accent" /> 模型配置
+          <Server className="h-5 w-5 text-accent" /> {t('settings.title')}
         </h1>
         <p className="mt-1 text-sm text-text-muted">
-          配置 OpenAI 兼容协议的 AI 供应商与模型。漫剧工作流会调用对话、图像、视频、语音四类模型。
+          {t('settings.desc')}
         </p>
       </header>
 
@@ -97,12 +99,12 @@ export function Settings() {
       <Card>
         <CardHeader>
           <span className="flex items-center gap-2 text-sm font-medium text-text">
-            <KeyRound className="h-4 w-4" /> 全局 API Key
+            <KeyRound className="h-4 w-4" /> {t('settings.globalKey')}
           </span>
         </CardHeader>
         <CardBody>
           <p className="mb-2 text-xs text-text-muted">
-            当供应商未单独配置 Key 时，回退使用此全局 Key。
+            {t('settings.globalKeyDesc')}
           </p>
           <CommitInput
             type="password"
@@ -118,12 +120,12 @@ export function Settings() {
       {/* 当前模型 */}
       <Card>
         <CardHeader>
-          <span className="text-sm font-medium text-text">当前生效模型</span>
+          <span className="text-sm font-medium text-text">{t('settings.currentModel')}</span>
         </CardHeader>
         <CardBody className="space-y-5">
           <ModelField
             kind="chat"
-            label="对话模型（剧本分析 / 提示词）"
+            label={t('settings.chat')}
             providerId={config.chatModel.providerId}
             modelName={config.chatModel.modelName}
             onChange={(providerId, modelName) =>
@@ -132,7 +134,7 @@ export function Settings() {
           />
           <ModelField
             kind="image"
-            label="图像模型（关键帧 / 定妆图）"
+            label={t('settings.image')}
             providerId={config.imageModel.providerId}
             modelName={config.imageModel.modelName}
             onChange={(providerId, modelName) =>
@@ -149,7 +151,7 @@ export function Settings() {
           />
           <ModelField
             kind="video"
-            label="视频模型（帧间插值）"
+            label={t('settings.video')}
             providerId={config.videoModel.providerId}
             modelName={config.videoModel.modelName}
             onChange={(providerId, modelName) =>
@@ -166,7 +168,7 @@ export function Settings() {
           />
           <ModelField
             kind="audio"
-            label="语音模型（配音）"
+            label={t('settings.audio')}
             providerId={config.audioModel.providerId}
             modelName={config.audioModel.modelName}
             onChange={(providerId, modelName) =>
@@ -179,7 +181,7 @@ export function Settings() {
       {/* 默认比例 */}
       <Card>
         <CardHeader>
-          <span className="text-sm font-medium text-text">默认画面比例</span>
+          <span className="text-sm font-medium text-text">{t('settings.aspect')}</span>
         </CardHeader>
         <CardBody>
           <Select
@@ -189,9 +191,9 @@ export function Settings() {
               update((s) => ({ ...s, defaultAspectRatio: e.target.value as AspectRatio }))
             }
           >
-            <option value="9:16">9:16 竖屏（短剧/漫剧）</option>
-            <option value="16:9">16:9 横屏</option>
-            <option value="1:1">1:1 方形</option>
+            <option value="9:16">{t('settings.aspect916')}</option>
+            <option value="16:9">{t('settings.aspect169')}</option>
+            <option value="1:1">{t('settings.aspect11')}</option>
           </Select>
         </CardBody>
       </Card>
@@ -203,11 +205,12 @@ export function Settings() {
 
 function ImageTypeSelect() {
   const { state, update } = useModel()
+  const { t } = useI18n()
   if (!state) return null
   const config = state.currentConfig
   return (
     <div>
-      <Label>API 形态</Label>
+      <Label>{t('settings.imageType')}</Label>
       <Select
         className="max-w-xs"
         value={config.imageModel.type ?? 'openai'}
@@ -221,8 +224,8 @@ function ImageTypeSelect() {
           }))
         }
       >
-        <option value="openai">OpenAI 兼容</option>
-        <option value="gemini">Gemini 原生</option>
+        <option value="openai">{t('settings.imageTypeOpenai')}</option>
+        <option value="gemini">{t('settings.imageTypeGemini')}</option>
       </Select>
     </div>
   )
@@ -230,11 +233,12 @@ function ImageTypeSelect() {
 
 function VideoTypeSelect() {
   const { state, update } = useModel()
+  const { t } = useI18n()
   if (!state) return null
   const config = state.currentConfig
   return (
     <div>
-      <Label>调度类型</Label>
+      <Label>{t('settings.videoType')}</Label>
       <Select
         className="max-w-xs"
         value={config.videoModel.type}
@@ -248,9 +252,9 @@ function VideoTypeSelect() {
           }))
         }
       >
-        <option value="seedance">字节 Seedance（火山，异步）</option>
-        <option value="veo">通用同步 (veo)</option>
-        <option value="sora">OpenAI Sora（异步）</option>
+        <option value="seedance">{t('settings.videoTypeSeedance')}</option>
+        <option value="veo">{t('settings.videoTypeVeo')}</option>
+        <option value="sora">{t('settings.videoTypeSora')}</option>
       </Select>
     </div>
   )
@@ -258,6 +262,7 @@ function VideoTypeSelect() {
 
 function ProvidersCard() {
   const { state, update } = useModel()
+  const { t } = useI18n()
   const [adding, setAdding] = useState(false)
   const [draft, setDraft] = useState({ name: '', baseUrl: '', apiKey: '' })
   if (!state) return null
@@ -279,14 +284,14 @@ function ProvidersCard() {
   return (
     <Card>
       <CardHeader className="flex items-center justify-between">
-        <span className="text-sm font-medium text-text">供应商</span>
+        <span className="text-sm font-medium text-text">{t('settings.provider')}</span>
         <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4" /> 新增
+          <Plus className="h-4 w-4" /> {t('settings.addProvider')}
         </Button>
       </CardHeader>
       <CardBody className="space-y-3">
         <div>
-          <Label>主流供应商预设（一键添加）</Label>
+          <Label>{t('settings.providerPreset')}</Label>
           <div className="flex flex-wrap gap-2">
             {MODEL_PRESETS.map((p) => (
               <Button
@@ -315,25 +320,25 @@ function ProvidersCard() {
       <Modal
         open={adding}
         onClose={() => setAdding(false)}
-        title="新增供应商"
+        title={t('settings.addProviderTitle')}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAdding(false)}>取消</Button>
-            <Button variant="primary" onClick={submitNew}>创建</Button>
+            <Button variant="ghost" onClick={() => setAdding(false)}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={submitNew}>{t('settings.create')}</Button>
           </>
         }
       >
         <div className="space-y-3">
           <div>
-            <Label>名称</Label>
-            <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="如：OpenAI / AntSK" />
+            <Label>{t('settings.providerName')}</Label>
+            <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder={t('settings.providerNamePh')} />
           </div>
           <div>
-            <Label>Base URL</Label>
-            <Input value={draft.baseUrl} onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })} placeholder="https://api.example.com" />
+            <Label>{t('settings.baseUrl')}</Label>
+            <Input value={draft.baseUrl} onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })} placeholder={t('settings.baseUrlPh')} />
           </div>
           <div>
-            <Label>API Key（可选，留空使用全局）</Label>
+            <Label>{t('settings.providerKey')}</Label>
             <Input type="password" value={draft.apiKey} onChange={(e) => setDraft({ ...draft, apiKey: e.target.value })} placeholder="sk-..." />
           </div>
         </div>
@@ -344,10 +349,11 @@ function ProvidersCard() {
 
 function ProviderRow({ provider, update }: { provider: ModelProvider; update: ModelUpdate }) {
   const [show, setShow] = useState(false)
+  const { t } = useI18n()
 
   const handleDelete = () => {
     if (provider.isBuiltIn) return
-    if (!confirm(`确定删除供应商「${provider.name}」？`)) return
+    if (!confirm(t('settings.deleteProviderConfirm', { name: provider.name }))) return
     try {
       update((s) => removeProvider(s, provider.id))
     } catch (err) {
@@ -360,8 +366,8 @@ function ProviderRow({ provider, update }: { provider: ModelProvider; update: Mo
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-sm font-medium text-text">{provider.name}</span>
-          {provider.isDefault && <Badge tone="accent">默认</Badge>}
-          {provider.isBuiltIn && <Badge>内置</Badge>}
+          {provider.isDefault && <Badge tone="accent">{t('settings.default')}</Badge>}
+          {provider.isBuiltIn && <Badge>{t('settings.builtin')}</Badge>}
         </div>
         <div className="mt-0.5 truncate font-mono text-xs text-text-subtle">{provider.baseUrl}</div>
       </div>
@@ -369,20 +375,20 @@ function ProviderRow({ provider, update }: { provider: ModelProvider; update: Mo
         <CommitInput
           type={show ? 'text' : 'password'}
           value={provider.apiKey ?? ''}
-          placeholder="未配置 Key"
+          placeholder={t('settings.masked')}
           onCommit={(v) => update((s) => upsertProvider(s, { ...provider, apiKey: v || undefined }))}
         />
       </div>
-      <Button size="icon" variant="ghost" title={show ? '隐藏' : '显示'} onClick={() => setShow((v) => !v)}>
+      <Button size="icon" variant="ghost" title={show ? t('settings.hide') : t('settings.show')} onClick={() => setShow((v) => !v)}>
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </Button>
       {!provider.isDefault && (
-        <Button size="icon" variant="ghost" title="设为默认" onClick={() => update((s) => markDefaultProvider(s, provider.id))}>
+        <Button size="icon" variant="ghost" title={t('settings.setDefault')} onClick={() => update((s) => markDefaultProvider(s, provider.id))}>
           <Check className="h-4 w-4" />
         </Button>
       )}
       {!provider.isBuiltIn && (
-        <Button size="icon" variant="ghost" title="删除" onClick={handleDelete}>
+        <Button size="icon" variant="ghost" title={t('common.delete')} onClick={handleDelete}>
           <Trash2 className="h-4 w-4 text-danger" />
         </Button>
       )}
@@ -406,6 +412,7 @@ function ModelField({
   extra?: ReactNode
 }) {
   const { state } = useModel()
+  const { t } = useI18n()
   const suggestions = suggestModels(kind)
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.2fr]">
@@ -420,10 +427,10 @@ function ModelField({
         </Select>
       </div>
       <div>
-        <Label>模型名</Label>
+        <Label>{t('settings.modelName')}</Label>
         <CommitInput
           value={modelName}
-          placeholder="model name"
+          placeholder={t('settings.modelNamePh')}
           list={`${kind}-model-suggestions`}
           onCommit={(v) => onChange(providerId, v)}
         />

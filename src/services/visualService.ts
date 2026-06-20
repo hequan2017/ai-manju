@@ -2,7 +2,7 @@
  * 视觉风格服务
  * —— 独立的美术指导生成、批量角色视觉提示词、角色九宫格(turnaround)多视角。
  */
-import { chatJSON, generateImage, type AdapterContext } from './adapters'
+import { chat, chatJSON, generateImage, type AdapterContext } from './adapters'
 import type {
   ArtDirection,
   AspectRatio,
@@ -99,4 +99,73 @@ export async function generateCharacterTurnaround(
     views,
   ].filter(Boolean).join('\n')
   return generateImage(ctx, { model: input.imageModel, prompt, aspect: '1:1' })
+}
+
+/**
+ * 关键帧提示词增强：把简短描述改写为精确的英文图像生成提示词（120-220 词），
+ * 强调构图/光影/角色一致性/风格。
+ */
+export async function enhanceKeyframePrompt(
+  ctx: AdapterContext,
+  input: { visualPrompt: string; chatModel: ChatModelConfig },
+): Promise<string> {
+  return chat(ctx, {
+    model: input.chatModel,
+    temperature: 0.5,
+    messages: [
+      {
+        role: 'system',
+        content:
+          '你是分镜关键帧专家。把用户的镜头描述改写为精确的英文图像生成提示词（120-220 词），强调构图、光影、角色一致性、风格连贯。只输出提示词本身，不要解释。',
+      },
+      { role: 'user', content: input.visualPrompt },
+    ],
+  })
+}
+
+/**
+ * 运镜动作建议：为镜头给出一个具体、有张力的运镜/动作建议（单镜头，控制时长）。
+ */
+export async function generateActionSuggestion(
+  ctx: AdapterContext,
+  input: { scene: string; actionSummary: string; chatModel: ChatModelConfig },
+): Promise<string> {
+  const result = await chatJSON<{ suggestion?: string }>(ctx, {
+    model: input.chatModel,
+    temperature: 0.6,
+    messages: [
+      {
+        role: 'system',
+        content:
+          '你是运镜专家。为镜头给出一个具体、有张力、可执行的运镜动作建议（单镜头，控制时长）。输出 JSON {"suggestion":"..."}。',
+      },
+      { role: 'user', content: `场景：${input.scene}\n动作：${input.actionSummary}` },
+    ],
+  })
+  return result.suggestion ?? ''
+}
+
+/**
+ * 镜头拆分为子镜头：把一个复杂镜头拆为多个连续子镜头（不同景别/机位）。
+ */
+export async function splitShotIntoSubShots(
+  ctx: AdapterContext,
+  input: { actionSummary: string; scene: string; chatModel: ChatModelConfig },
+): Promise<{ shotSize: string; cameraMovement: string; actionSummary: string }[]> {
+  const result = await chatJSON<{ subShots?: { shotSize: string; cameraMovement: string; actionSummary: string }[] }>(
+    ctx,
+    {
+      model: input.chatModel,
+      temperature: 0.5,
+      messages: [
+        {
+          role: 'system',
+          content:
+            '你是分镜师。把一个复杂镜头拆为 2-4 个连续子镜头，每个给出景别、运镜、动作摘要。对白只放最合适的子镜头。输出 JSON {"subShots":[{shotSize,cameraMovement,actionSummary}]}。',
+        },
+        { role: 'user', content: `场景：${input.scene}\n原镜头：${input.actionSummary}` },
+      ],
+    },
+  )
+  return result.subShots ?? []
 }

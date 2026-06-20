@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useAdapterContext, useModel } from '@/contexts/ModelContext'
+import { useI18n } from '@/contexts/I18nContext'
 import { continueScript, generateShots, parseScript, rewriteScript } from '@/services/scriptService'
 import { applyAssetMatches } from '@/services/assetMatchService'
 import { promoteAssetsToLibrary } from '@/services/assetLibraryService'
@@ -39,6 +40,7 @@ export function StageScript() {
   const { currentEpisode, currentProject, updateProject, patchEpisode } = useProject()
   const { state } = useModel()
   const adapterCtx = useAdapterContext()
+  const { t } = useI18n()
 
   const [rawDraft, setRawDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -50,7 +52,7 @@ export function StageScript() {
   }, [currentEpisode?.id])
 
   if (!currentEpisode) {
-    return <EmptyState title="请先选择一集" description="在左侧选择或创建一集后再开始剧本创作。" />
+    return <EmptyState title={t('common.emptyEpisode')} description={t('script.selectEpisodeDesc')} />
   }
 
   const sd = currentEpisode.scriptData
@@ -58,11 +60,11 @@ export function StageScript() {
 
   const handleParse = async () => {
     if (!rawDraft.trim()) {
-      setError('请先输入故事或剧本内容')
+      setError(t('script.emptyInput'))
       return
     }
     if (!adapterCtx || !chatModel) {
-      setError('模型未就绪，请先在「模型配置」中完成配置')
+      setError(t('script.modelNotReady'))
       return
     }
     setBusy(true)
@@ -119,8 +121,8 @@ export function StageScript() {
   }
 
   const handleContinue = async () => {
-    if (!adapterCtx || !chatModel) return setError('模型未就绪，请先配置')
-    if (!rawDraft.trim()) return setError('请先输入剧本内容')
+    if (!adapterCtx || !chatModel) return setError(t('script.modelNotReadyShort'))
+    if (!rawDraft.trim()) return setError(t('script.emptyInputShort'))
     setAiBusy(true)
     setError(null)
     try {
@@ -134,9 +136,9 @@ export function StageScript() {
   }
 
   const handleRewrite = async () => {
-    if (!adapterCtx || !chatModel) return setError('模型未就绪，请先配置')
-    if (!rawDraft.trim()) return setError('请先输入剧本内容')
-    const instruction = prompt('请输入改写指令（如：增加悬念、改为喜剧风格、加快节奏）')
+    if (!adapterCtx || !chatModel) return setError(t('script.modelNotReadyShort'))
+    if (!rawDraft.trim()) return setError(t('script.emptyInputShort'))
+    const instruction = prompt(t('script.rewritePrompt'))
     if (!instruction) return
     setAiBusy(true)
     setError(null)
@@ -163,10 +165,10 @@ export function StageScript() {
       <Card>
         <CardHeader className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-medium text-text">
-            <Clapperboard className="h-4 w-4 text-accent" /> 故事 / 剧本输入
+            <Clapperboard className="h-4 w-4 text-accent" /> {t('script.input')}
           </span>
           <div className="flex items-center gap-2">
-            <Label className="mb-0">目标时长</Label>
+            <Label className="mb-0">{t('script.duration')}</Label>
             <Select
               className="h-8 w-24"
               value={currentEpisode.targetDuration}
@@ -189,21 +191,21 @@ export function StageScript() {
               rawDraft !== currentEpisode.rawScript &&
               patchEpisode(currentEpisode.id, (ep) => ({ ...ep, rawScript: rawDraft }))
             }
-            placeholder="粘贴你的小说、故事大纲或剧本。AI 会自动拆解为角色、场景、道具，并规划分镜……"
+            placeholder={t('script.placeholder')}
           />
           <div className="mt-3 flex items-center justify-between">
             <span className="text-xs text-text-subtle">
-              语言 {currentEpisode.language} · 风格 {currentEpisode.visualStyle} · 模型 {chatModel?.modelName ?? '未配置'}
+              {t('script.meta', { lang: currentEpisode.language, style: currentEpisode.visualStyle, model: chatModel?.modelName ?? t('script.modelUnset') })}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" loading={aiBusy} onClick={handleContinue} disabled={!chatModel}>
-                续写
+                {t('script.continue')}
               </Button>
               <Button variant="outline" size="sm" loading={aiBusy} onClick={handleRewrite} disabled={!chatModel}>
-                改写
+                {t('script.rewrite')}
               </Button>
               <Button variant="primary" loading={busy} onClick={handleParse} disabled={!chatModel}>
-                <Wand2 className="h-4 w-4" /> {sd ? '重新拆解' : 'AI 拆解剧本'}
+                <Wand2 className="h-4 w-4" /> {sd ? t('script.reparse') : t('script.parse')}
               </Button>
             </div>
           </div>
@@ -213,7 +215,7 @@ export function StageScript() {
       {busy && !sd && (
         <Card>
           <CardBody className="flex items-center justify-center gap-3 py-12 text-text-muted">
-            <Spinner /> AI 正在拆解剧本与规划分镜，请稍候……
+            <Spinner /> {t('script.parsing')}
           </CardBody>
         </Card>
       )}
@@ -224,6 +226,7 @@ export function StageScript() {
 }
 
 function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Shot[] }) {
+  const { t } = useI18n()
   const charName = (id: string) => scriptData.characters.find((c) => c.id === id)?.name ?? '?'
   const ad = scriptData.artDirection
 
@@ -245,7 +248,7 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
         <Card>
           <CardHeader>
             <span className="flex items-center gap-2 text-sm font-medium text-text">
-              <Sparkles className="h-4 w-4 text-accent" /> 美术指导（统一视觉风格）
+              <Sparkles className="h-4 w-4 text-accent" /> {t('script.artDirection')}
             </span>
           </CardHeader>
           <CardBody className="space-y-2">
@@ -268,7 +271,7 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
         <Card>
           <CardHeader>
             <span className="flex items-center gap-2 text-sm font-medium text-text">
-              <Users className="h-4 w-4 text-accent" /> 角色（{scriptData.characters.length}）
+              <Users className="h-4 w-4 text-accent" /> {t('script.chars')}（{scriptData.characters.length}）
             </span>
           </CardHeader>
           <CardBody className="space-y-3">
@@ -292,7 +295,7 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
         <Card>
           <CardHeader>
             <span className="flex items-center gap-2 text-sm font-medium text-text">
-              <MapPin className="h-4 w-4 text-accent" /> 场景（{scriptData.scenes.length}）
+              <MapPin className="h-4 w-4 text-accent" /> {t('script.scenes')}（{scriptData.scenes.length}）
             </span>
           </CardHeader>
           <CardBody className="space-y-3">
@@ -314,12 +317,12 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
         <Card>
           <CardHeader>
             <span className="flex items-center gap-2 text-sm font-medium text-text">
-              <FlaskConical className="h-4 w-4 text-accent" /> 道具（{scriptData.props.length}）
+              <FlaskConical className="h-4 w-4 text-accent" /> {t('script.props')}（{scriptData.props.length}）
             </span>
           </CardHeader>
           <CardBody>
             {scriptData.props.length === 0 ? (
-              <p className="text-xs text-text-subtle">本集无需特殊道具</p>
+              <p className="text-xs text-text-subtle">{t('assets.noProp')}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {scriptData.props.map((p) => (
@@ -337,7 +340,7 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
         <Card>
           <CardHeader>
             <span className="flex items-center gap-2 text-sm font-medium text-text">
-              <Camera className="h-4 w-4 text-accent" /> 分镜（{shots.length}）
+              <Camera className="h-4 w-4 text-accent" /> {t('script.shots')}（{shots.length}）
             </span>
           </CardHeader>
           <CardBody className="space-y-2">
@@ -362,7 +365,7 @@ function ScriptResult({ scriptData, shots }: { scriptData: ScriptData; shots: Sh
               </div>
             ))}
             <p className="pt-1 text-xs text-text-subtle">
-              进入「资产」阶段生成定妆图与场景图，再至「导演台」制作关键帧与视频。
+              {t('script.enterAssets')}
             </p>
           </CardBody>
         </Card>

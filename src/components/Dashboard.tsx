@@ -4,11 +4,13 @@
  */
 import { useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Film, Plus, Rocket, Sparkles, Trash2, Upload } from 'lucide-react'
+import { Copy, Download, Film, Pencil, Plus, Rocket, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
+import { useI18n } from '@/contexts/I18nContext'
 import { exportProjectData, importProjectData } from '@/services/transferService'
 import { loadDemoProject } from '@/services/demoData'
 import { downloadBlob } from '@/services/utils'
+import type { ManjuProject } from '@/types'
 import { Onboarding } from './Onboarding'
 import {
   Button,
@@ -23,34 +25,35 @@ import {
 } from './ui'
 
 const VISUAL_STYLES = [
-  { value: 'anime', label: '动漫' },
-  { value: '2d-animation', label: '2D 动画' },
-  { value: '3d-animation', label: '3D 动画' },
-  { value: 'live-action', label: '真人实拍' },
-  { value: 'oil-painting', label: '油画风' },
-  { value: 'cyberpunk', label: '赛博朋克' },
+  { value: 'anime', key: 'style.anime' },
+  { value: '2d-animation', key: 'style.2d' },
+  { value: '3d-animation', key: 'style.3d' },
+  { value: 'live-action', key: 'style.live' },
+  { value: 'oil-painting', key: 'style.oil' },
+  { value: 'cyberpunk', key: 'style.cyber' },
 ]
 
 const LANGUAGES = [
-  { value: 'zh', label: '中文' },
-  { value: 'en', label: 'English' },
-  { value: 'ja', label: '日本語' },
+  { value: 'zh', key: 'lang.zh' },
+  { value: 'en', key: 'lang.en' },
+  { value: 'ja', key: 'lang.ja' },
 ]
 
-function formatRelative(ts: number): string {
-  const diff = Date.now() - ts
-  const min = Math.floor(diff / 60000)
-  if (min < 1) return '刚刚'
-  if (min < 60) return `${min} 分钟前`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr} 小时前`
-  const day = Math.floor(hr / 24)
-  return `${day} 天前`
-}
-
 export function Dashboard() {
-  const { projects, loading, createProject, refreshProjects, removeProject } = useProject()
+  const { projects, loading, createProject, updateProject, refreshProjects, removeProject } = useProject()
+  const { t } = useI18n()
   const navigate = useNavigate()
+
+  const formatRelative = (ts: number): string => {
+    const diff = Date.now() - ts
+    const min = Math.floor(diff / 60000)
+    if (min < 1) return t('time.justNow')
+    if (min < 60) return t('time.minAgo', { n: min })
+    const hr = Math.floor(min / 60)
+    if (hr < 24) return t('time.hourAgo', { n: hr })
+    const day = Math.floor(hr / 24)
+    return t('time.dayAgo', { n: day })
+  }
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({
     title: '',
@@ -64,7 +67,7 @@ export function Dashboard() {
     setSubmitting(true)
     try {
       const project = await createProject({
-        title: form.title.trim() || '未命名漫剧',
+        title: form.title.trim() || t('dashboard.untitled'),
         description: form.description.trim(),
         visualStyle: form.visualStyle,
         language: form.language,
@@ -86,7 +89,7 @@ export function Dashboard() {
       await importProjectData(payload)
       await refreshProjects()
     } catch (err) {
-      alert(`导入失败：${err instanceof Error ? err.message : String(err)}`)
+      alert(t('dashboard.importFail', { msg: err instanceof Error ? err.message : String(err) }))
     }
     e.target.value = ''
   }
@@ -100,8 +103,21 @@ export function Dashboard() {
   }
   const handleDelete = async (e: MouseEvent, projectId: string, title: string) => {
     e.stopPropagation()
-    if (!confirm(`确定删除项目「${title}」及其所有季与集？此操作不可撤销。`)) return
+    if (!confirm(t('dashboard.deleteConfirmTitle', { title }))) return
     await removeProject(projectId)
+  }
+
+  const handleRenameProject = async (e: MouseEvent, project: ManjuProject) => {
+    e.stopPropagation()
+    const title = prompt(t('dashboard.titlePrompt'), project.title)
+    if (title && title.trim()) await updateProject({ ...project, title: title.trim() })
+  }
+
+  const handleDuplicateProject = async (e: MouseEvent, id: string) => {
+    e.stopPropagation()
+    const payload = await exportProjectData(id)
+    await importProjectData(payload)
+    await refreshProjects()
   }
 
   const handleLoadDemo = async () => {
@@ -116,9 +132,9 @@ export function Dashboard() {
         <Onboarding />
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-text">我的漫剧项目</h1>
+            <h1 className="text-2xl font-bold text-text">{t('nav.projects')}</h1>
             <p className="mt-1 text-sm text-text-muted">
-              从灵感到成片 —— 剧本 · 资产 · 导演台 · 导出的工业化工作流
+              {t('nav.subtitle')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -130,13 +146,13 @@ export function Dashboard() {
               onChange={handleImport}
             />
             <Button variant="outline" onClick={handleLoadDemo}>
-              <Rocket className="h-4 w-4" /> 加载示例
+              <Rocket className="h-4 w-4" /> {t('nav.demo')}
             </Button>
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
-              <Upload className="h-4 w-4" /> 导入
+              <Upload className="h-4 w-4" /> {t('nav.import')}
             </Button>
             <Button variant="primary" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" /> 新建漫剧
+              <Plus className="h-4 w-4" /> {t('nav.new')}
             </Button>
           </div>
         </div>
@@ -148,11 +164,11 @@ export function Dashboard() {
         ) : projects.length === 0 ? (
           <EmptyState
             icon={<Film className="h-10 w-10" />}
-            title="还没有漫剧项目"
-            description="创建你的第一部 AI 漫剧，开启工业化创作流程。"
+            title={t('dashboard.empty.title')}
+            description={t('dashboard.empty.desc')}
             action={
               <Button variant="primary" onClick={() => setCreating(true)}>
-                <Sparkles className="h-4 w-4" /> 创建第一个项目
+                <Sparkles className="h-4 w-4" /> {t('dashboard.empty.action')}
               </Button>
             }
           />
@@ -176,17 +192,35 @@ export function Dashboard() {
                 <div className="p-4">
                   <h3 className="truncate font-semibold text-text">{p.title}</h3>
                   <p className="mt-1 line-clamp-2 h-9 text-xs text-text-muted">
-                    {p.description || '暂无描述'}
+                    {p.description || t('dashboard.noDesc')}
                   </p>
                   <div className="mt-3 flex items-center justify-between text-xs text-text-subtle">
-                    <span>{VISUAL_STYLES.find((s) => s.value === p.visualStyle)?.label ?? p.visualStyle}</span>
+                    <span>{(() => { const s = VISUAL_STYLES.find((s) => s.value === p.visualStyle); return s ? t(s.key) : p.visualStyle })()}</span>
                     <div className="flex items-center gap-2">
                       <span>{formatRelative(p.lastModified)}</span>
                       <Button
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        title="导出项目"
+                        title={t('dashboard.copyProject')}
+                        onClick={(e) => handleDuplicateProject(e, p.id)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        title={t('dashboard.renameProject')}
+                        onClick={(e) => handleRenameProject(e, p)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        title={t('dashboard.exportProject')}
                         onClick={(e) => handleExport(e, p.id, p.title)}
                       >
                         <Download className="h-3.5 w-3.5" />
@@ -195,7 +229,7 @@ export function Dashboard() {
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7"
-                        title={p.isDemo ? '示例项目不可删除' : '删除项目'}
+                        title={p.isDemo ? t('dashboard.demoNoDelete') : t('dashboard.deleteProject')}
                         disabled={p.isDemo}
                         onClick={(e) => handleDelete(e, p.id, p.title)}
                       >
@@ -213,55 +247,55 @@ export function Dashboard() {
       <Modal
         open={creating}
         onClose={() => setCreating(false)}
-        title="新建漫剧项目"
+        title={t('dashboard.create.title')}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setCreating(false)}>取消</Button>
+            <Button variant="ghost" onClick={() => setCreating(false)}>{t('common.cancel')}</Button>
             <Button variant="primary" loading={submitting} onClick={submit}>
-              创建并进入
+              {t('dashboard.create.submit')}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
           <div>
-            <Label>标题</Label>
+            <Label>{t('dashboard.create.titleLabel')}</Label>
             <Input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="给你的漫剧起个名字"
+              placeholder={t('dashboard.titlePh')}
               autoFocus
             />
           </div>
           <div>
-            <Label>简介</Label>
+            <Label>{t('dashboard.create.intro')}</Label>
             <Textarea
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="一句话描述这个故事（可选）"
+              placeholder={t('dashboard.introPh')}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>视觉风格</Label>
+              <Label>{t('dashboard.create.style')}</Label>
               <Select
                 value={form.visualStyle}
                 onChange={(e) => setForm({ ...form, visualStyle: e.target.value })}
               >
                 {VISUAL_STYLES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>{t(s.key)}</option>
                 ))}
               </Select>
             </div>
             <div>
-              <Label>语言</Label>
+              <Label>{t('dashboard.create.lang')}</Label>
               <Select
                 value={form.language}
                 onChange={(e) => setForm({ ...form, language: e.target.value })}
               >
                 {LANGUAGES.map((l) => (
-                  <option key={l.value} value={l.value}>{l.label}</option>
+                  <option key={l.value} value={l.value}>{t(l.key)}</option>
                 ))}
               </Select>
             </div>

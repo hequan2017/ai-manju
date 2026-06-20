@@ -3,12 +3,9 @@
  * —— 展示当前集的 AI 调用记录（类型/资源/模型/状态/耗时）。
  */
 import { CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { useI18n } from '@/contexts/I18nContext'
 import type { Episode } from '@/types'
 import { Badge, Modal } from './ui'
-
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString('zh-CN', { hour12: false })
-}
 
 export function RenderLogsModal({
   open,
@@ -19,10 +16,13 @@ export function RenderLogsModal({
   onClose: () => void
   episode: Episode | null
 }) {
+  const { t, locale } = useI18n()
+  const formatTime = (ts: number): string =>
+    new Date(ts).toLocaleTimeString(locale === 'zh' ? 'zh-CN' : 'en-US', { hour12: false })
   return (
-    <Modal open={open} onClose={onClose} title="渲染日志" size="lg">
+    <Modal open={open} onClose={onClose} title={t('logs.title')} size="lg">
       {!episode || episode.renderLogs.length === 0 ? (
-        <p className="py-8 text-center text-sm text-text-muted">暂无调用记录</p>
+        <p className="py-8 text-center text-sm text-text-muted">{t('logs.empty')}</p>
       ) : (
         <div className="space-y-1.5">
           {episode.renderLogs.map((log) => (
