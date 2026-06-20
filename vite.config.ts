@@ -18,5 +18,14 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          vendor: ['lucide-react', 'jszip', 'idb', 'clsx'],
+        },
+      },
+    },
   },
 })
