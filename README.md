@@ -7,6 +7,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF.svg)](https://vite.dev/)
 [![Tailwind](https://img.shields.io/badge/Tailwind-v4-38BDF8.svg)](https://tailwindcss.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-passing-brightgreen.svg)]()
+[![i18n](https://img.shields.io/badge/i18n-中英-yellow.svg)]
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#-许可证)
 
 **AI 漫剧平台** 面向创作者，实现「**剧本 → 资产 → 导演台 → 导出**」的完整工业化工作流。它摒弃不可控的"抽卡式"生成，采用 **Script-to-Asset-to-Keyframe** 流程，精准控制角色一致性、场景连续性与镜头运动，并原生支持**多集漫剧**的项目化管理。
@@ -110,18 +112,20 @@
 
 ## 🏗️ 技术架构
 
-纯前端 SPA（无后端依赖，数据本地化、隐私安全），可选 Node 媒体代理。
+纯前端 SPA（数据本地化），对接 new-api 后端 AI 网关。Docker 一键部署含同源反代。
 
 | 层级 | 技术选型 |
 | --- | --- |
 | 框架 | React 19 + TypeScript 5.8 |
-| 构建 | Vite 6 |
-| 样式 | Tailwind CSS v4（工业风明暗双主题，CSS 变量驱动） |
+| 构建 | Vite 6（manualChunks 拆包） |
+| 样式 | Tailwind CSS v4（工业风明暗双主题 + 玻璃态打磨） |
 | 路由 | React Router 7 |
-| 存储 | IndexedDB（`idb` 封装）+ OPFS（视频大对象） |
-| 打包 | JSZip（成片导出） |
+| 存储 | IndexedDB（`idb`）+ OPFS（视频大对象） |
+| 后端 | new-api（AI 网关，Docker 同源反代） |
+| i18n | 中英双语全量字典（`I18nContext`） |
+| 测试 | Vitest（service 层单元测试） |
+| 打包 | JSZip（成片导出）+ canvas 混流 |
 | 图标 | lucide-react |
-| 媒体代理 | Node HTTP 服务（可选） |
 
 ### 目录结构
 
