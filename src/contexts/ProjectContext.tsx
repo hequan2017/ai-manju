@@ -104,8 +104,10 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setProjects(await listProjects())
   }, [])
 
-  const loadSeasons = useCallback(async (pid: string) => {
-    setSeasons(await listSeasons(pid))
+  const loadSeasons = useCallback(async (pid: string): Promise<Season[]> => {
+    const list = await listSeasons(pid)
+    setSeasons(list)
+    return list
   }, [])
 
   const loadEpisodes = useCallback(async (sid: string) => {
@@ -118,18 +120,16 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setSeasonId(null)
       setEpisodeId(null)
       setEpisodes([])
-      if (id) {
-        await loadSeasons(id)
-        setSeasons((prevSeasons) => {
-          const first = prevSeasons[0]
-          if (first) {
-            setSeasonId(first.id)
-            void loadEpisodes(first.id)
-          }
-          return prevSeasons
-        })
-      } else {
+      if (!id) {
         setSeasons([])
+        return
+      }
+      // 直接消费 loadSeasons 的返回值，避免在 setState updater 内触发副作用（StrictMode 安全）
+      const list = await loadSeasons(id)
+      const first = list[0]
+      if (first) {
+        setSeasonId(first.id)
+        await loadEpisodes(first.id)
       }
     },
     [loadSeasons, loadEpisodes],

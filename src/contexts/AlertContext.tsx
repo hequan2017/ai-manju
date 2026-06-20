@@ -6,6 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react'
@@ -41,8 +42,11 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setItems((prev) => prev.filter((i) => i.id !== id)), 4000)
   }, [])
 
+  // alert 引用稳定：提示增删（items 变化）不会导致 value 指向新对象，避免全量消费者重渲染
+  const value = useMemo<AlertContextValue>(() => ({ alert }), [alert])
+
   return (
-    <AlertContext.Provider value={{ alert }}>
+    <AlertContext.Provider value={value}>
       {children}
       <div className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2">
         {items.map((i) => (

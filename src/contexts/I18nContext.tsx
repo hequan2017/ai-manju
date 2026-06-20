@@ -2,7 +2,7 @@
  * 国际化 Context
  * —— 中英双语全量字典 + useT。按「组件.字段」命名 key，缺失 key 原样返回。
  */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { kvGet, kvSet } from '@/services/db'
 
 export type Locale = 'zh' | 'en'
@@ -245,20 +245,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const setLocale = (l: Locale) => {
+  const setLocale = useCallback((l: Locale) => {
     setLocaleState(l)
     void kvSet('locale', l)
-  }
+  }, [])
 
-  const t = (key: string, vars?: Record<string, string | number>) => {
-    let s = DICT[locale][key] ?? DICT.zh[key] ?? key
-    if (vars) {
-      for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))
-    }
-    return s
-  }
+  const t = useCallback(
+    (key: string, vars?: Record<string, string | number>) => {
+      let s = DICT[locale][key] ?? DICT.zh[key] ?? key
+      if (vars) {
+        for (const [k, v] of Object.entries(vars)) s = s.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))
+      }
+      return s
+    },
+    [locale],
+  )
 
-  return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>
+  const value = useMemo<I18nValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t])
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 
 export function useI18n(): I18nValue {
