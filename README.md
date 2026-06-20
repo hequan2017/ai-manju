@@ -242,9 +242,18 @@ docker compose down
 > 生产环境建议构建时注入媒体代理端点：
 > `docker compose build --build-arg VITE_MEDIA_PROXY_ENDPOINT=https://your-proxy/api/media-proxy`
 
-**一键完整启动（前端 + new-api 后端）**：`docker-compose.yaml` 已内置 new-api 服务，`docker compose up -d --build` 同时启动：
-- 前端平台：http://localhost:8080
-- new-api 后端：http://localhost:3000（首次访问需注册首个账号，自动成为管理员）
+**一键完整启动（前端 + new-api 同源反代）**：`docker-compose.yaml` 已内置 new-api 服务，前端 nginx 反代 `/api` + `/v1` → new-api，**同源部署解决跨域 cookie**：
+
+```bash
+docker compose up -d --build
+```
+
+- 前端：http://localhost:8080
+- new-api：仅内部网络（通过前端 `/api`、`/v1` 反代同源访问，不暴露端口）
+- 首次访问前端 → 登录页填 new-api 地址为**同源地址**（如 `http://localhost:8080`，即前端域；`/api` 自动反代到 new-api）
+
+> **同源反代**：登录换 token 的 cookie 在同源下无 SameSite 跨域问题。生产部署时把 `8080:80` 换成 `443:80` + TLS 即可。
+> new-api 数据持久化于 `./data/new-api`；`SESSION_SECRET` 请改为随机值；生产建议配 MySQL（`--profile mysql`）。
 
 可选附加：`docker compose --profile proxy up -d`（媒体代理）、`--profile mysql up -d`（MySQL 替代 SQLite）。
 

@@ -1,11 +1,8 @@
 services:
-  # ===== 前端：AI 漫剧平台 =====
+  # ===== 前端：AI 漫剧平台（nginx，同时反代 new-api） =====
   ai-manju:
     build:
       context: .
-      # 构建时可注入媒体代理端点（可选）
-      # args:
-      #   VITE_MEDIA_PROXY_ENDPOINT: "http://localhost:3001/api/media-proxy"
     image: ai-manju:latest
     container_name: ai-manju
     ports:
@@ -14,23 +11,18 @@ services:
       - new-api
     restart: unless-stopped
 
-  # ===== 后端：new-api（AI 网关，提供登录/令牌/模型代理） =====
+  # ===== 后端：new-api（仅内部网络，通过前端 nginx 反代同源访问） =====
   new-api:
     image: calciumion/new-api:latest
     container_name: ai-manju-new-api
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     volumes:
-      # 数据持久化（SQLite 库、日志等）
       - ./data/new-api:/data
     environment:
       - TZ=Asia/Shanghai
-      # 留空则使用 SQLite（存储于 /data）；如需 MySQL：
-      # - SQL_DSN=newapi:password@tcp(mysql:3306)/new-api
       - SQL_DSN=
       - SESSION_SECRET=change_this_session_secret
-      # 初始 root 管理员（可选）：首次启动自动创建
-      # - INITIAL_ROOT_TOKEN=
     restart: unless-stopped
 
   # ===== 可选：媒体代理（绕过签名 URL 的 CORS） =====
