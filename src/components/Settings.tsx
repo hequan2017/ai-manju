@@ -5,6 +5,7 @@
  */
 import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 import {
+  BookOpen,
   Check,
   Eye,
   EyeOff,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useModel } from '@/contexts/ModelContext'
 import { useI18n } from '@/contexts/I18nContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { NewApiAccountCard } from './NewApiAccountCard'
 import {
   markDefaultProvider,
@@ -91,6 +93,14 @@ export function Settings() {
         <p className="mt-1 text-sm text-text-muted">
           {t('settings.desc')}
         </p>
+        <a
+          href="https://docs.newapi.pro"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline"
+        >
+          <BookOpen className="h-3.5 w-3.5" /> new-api 接口文档
+        </a>
       </header>
 
       <NewApiAccountCard />
@@ -247,7 +257,7 @@ function VideoTypeSelect() {
             ...s,
             currentConfig: {
               ...s.currentConfig,
-              videoModel: { ...s.currentConfig.videoModel, type: e.target.value as 'sora' | 'veo' },
+              videoModel: { ...s.currentConfig.videoModel, type: e.target.value as 'sora' | 'veo' | 'seedance' },
             },
           }))
         }
@@ -413,7 +423,16 @@ function ModelField({
 }) {
   const { state } = useModel()
   const { t } = useI18n()
-  const suggestions = suggestModels(kind)
+  const { session, fetchModels } = useAuth()
+  const [apiModels, setApiModels] = useState<string[]>([])
+  useEffect(() => {
+    if (!session) {
+      setApiModels([])
+      return
+    }
+    fetchModels().then(setApiModels).catch(() => setApiModels([]))
+  }, [session, fetchModels])
+  const suggestions = [...new Set([...apiModels, ...suggestModels(kind)])]
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1.2fr]">
       <div>
