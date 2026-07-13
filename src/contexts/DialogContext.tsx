@@ -44,6 +44,10 @@ type DialogResolver =
 
 const DialogContext = createContext<DialogContextValue | null>(null)
 
+export function shouldSubmitPrompt(key: string, isComposing: boolean): boolean {
+  return key === 'Enter' && !isComposing
+}
+
 export function DialogProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n()
   const inputId = useId()
@@ -114,11 +118,11 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     <DialogContext.Provider value={value}>
       {children}
       <Modal
-        key={request?.id ?? 0}
         open={request !== null}
         onClose={handleCancel}
         title={options?.title}
         size="sm"
+        focusVersion={request?.id}
         footer={
           request && (
             <>
@@ -160,7 +164,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                 )
               }
               onKeyDown={(event) => {
-                if (event.key !== 'Enter') return
+                if (!shouldSubmitPrompt(event.key, event.nativeEvent.isComposing)) return
                 event.preventDefault()
                 handleConfirm()
               }}

@@ -22,6 +22,8 @@ export interface ModalProps {
   footer?: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
   ariaLabel?: string
+  /** 内容切换时重新定位对话框内焦点，但保留最初触发元素。 */
+  focusVersion?: string | number
 }
 
 const sizeMap = {
@@ -48,6 +50,7 @@ export function Modal({
   footer,
   size = 'md',
   ariaLabel = '对话框',
+  focusVersion,
 }: ModalProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -66,16 +69,21 @@ export function Modal({
     const trigger = triggerRef.current
     const releaseBodyScrollLock = acquireBodyScrollLock(document.body)
 
-    const preferredFocusable = dialog?.querySelector<HTMLElement>('[autofocus], [data-autofocus]')
-    const firstFocusable = preferredFocusable ?? dialog?.querySelector<HTMLElement>(focusableSelector)
-    ;(firstFocusable ?? dialog)?.focus()
-
     return () => {
       releaseBodyScrollLock()
       triggerRef.current = null
       if (trigger?.isConnected) trigger.focus()
     }
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const dialog = dialogRef.current
+    const preferredFocusable = dialog?.querySelector<HTMLElement>('[autofocus], [data-autofocus]')
+    const firstFocusable = preferredFocusable ?? dialog?.querySelector<HTMLElement>(focusableSelector)
+    ;(firstFocusable ?? dialog)?.focus()
+  }, [open, focusVersion])
 
   const handleFocusCapture = (event: FocusEvent<HTMLDivElement>) => {
     if (

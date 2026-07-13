@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, it } from 'vitest'
-import { Button, IconButton, Input, Label } from '@/components/ui'
+import { Button, IconButton, Input, Label, Modal } from '@/components/ui'
 
 it('关联标签与输入框', () => {
   const html = renderToStaticMarkup(
@@ -40,4 +40,14 @@ it('图标按钮默认使用 button 类型', () => {
   const html = renderToStaticMarkup(<IconButton icon={<span />} label="关闭" />)
 
   expect(html).toContain('type="button"')
+})
+
+it('模态框接受内容焦点版本且关闭时不渲染', () => {
+  const html = renderToStaticMarkup(
+    <Modal open={false} focusVersion={2} onClose={() => undefined}>
+      内容
+    </Modal>,
+  )
+
+  expect(html).toBe('')
 })
