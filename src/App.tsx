@@ -7,6 +7,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AlertProvider } from '@/contexts/AlertContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { DialogProvider } from '@/contexts/DialogContext'
 import { I18nProvider } from '@/contexts/I18nContext'
 import { ModelProvider } from '@/contexts/ModelContext'
 import { ProjectProvider } from '@/contexts/ProjectContext'
@@ -67,7 +68,9 @@ export default function App() {
           <AuthProvider>
             <ProjectProvider>
               <AlertProvider>
-                <AppShell />
+                <DialogProvider>
+                  <AppShell />
+                </DialogProvider>
               </AlertProvider>
             </ProjectProvider>
           </AuthProvider>

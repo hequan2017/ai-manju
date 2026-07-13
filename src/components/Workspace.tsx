@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useI18n } from '@/contexts/I18nContext'
+import { useDialog } from '@/contexts/DialogContext'
 import type { EpisodeStage } from '@/types'
 import { Badge, Button, EmptyState, Select, Spinner } from './ui'
 import { AssetSyncBanner } from './AssetSyncBanner'
@@ -61,6 +62,7 @@ export function Workspace() {
     duplicateEpisode,
   } = useProject()
   const { t } = useI18n()
+  const { confirmDialog, promptDialog } = useDialog()
 
   const [stage, setStage] = useState<EpisodeStage>('script')
   const [openLogs, setOpenLogs] = useState(false)
@@ -143,9 +145,14 @@ export function Workspace() {
               variant="ghost"
               title={t('ws.renameSeason')}
               disabled={!currentSeason}
-              onClick={() => {
+              onClick={async () => {
                 if (!currentSeason) return
-                const name = prompt(t('ws.renameSeasonPrompt'), currentSeason.title)
+                const name = await promptDialog({
+                  title: t('ws.renameSeasonPrompt'),
+                  defaultValue: currentSeason.title,
+                  confirmLabel: t('common.rename'),
+                  cancelLabel: t('common.cancel'),
+                })
                 if (name && name.trim()) void updateSeason(currentSeason.id, name.trim())
               }}
             >
@@ -156,10 +163,15 @@ export function Workspace() {
               variant="ghost"
               title={t('ws.deleteSeason')}
               disabled={!currentSeason || seasons.length <= 1}
-              onClick={() => {
-                if (currentSeason && confirm(t('ws.deleteSeasonConfirmTitle', { title: currentSeason.title }))) {
-                  void removeSeason(currentSeason.id)
-                }
+              onClick={async () => {
+                if (!currentSeason) return
+                const confirmed = await confirmDialog({
+                  title: t('ws.deleteSeasonConfirmTitle', { title: currentSeason.title }),
+                  confirmLabel: t('common.delete'),
+                  cancelLabel: t('common.cancel'),
+                  tone: 'danger',
+                })
+                if (confirmed) void removeSeason(currentSeason.id)
               }}
             >
               <Trash2 className="h-4 w-4 text-danger" />
@@ -188,8 +200,13 @@ export function Workspace() {
               <span
                 className="truncate"
                 title={t('ws.episodeDoubleRename')}
-                onDoubleClick={() => {
-                  const name = prompt(t('ws.episodeNamePrompt'), ep.title)
+                onDoubleClick={async () => {
+                  const name = await promptDialog({
+                    title: t('ws.episodeNamePrompt'),
+                    defaultValue: ep.title,
+                    confirmLabel: t('common.rename'),
+                    cancelLabel: t('common.cancel'),
+                  })
                   if (name && name.trim()) patchEpisode(ep.id, (e) => ({ ...e, title: name.trim() }))
                 }}
               >
@@ -207,9 +224,15 @@ export function Workspace() {
                 </button>
                 <button
                   title={t('ws.deleteEpisode')}
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation()
-                    if (confirm(t('ws.deleteEpisodeConfirmTitle', { title: ep.title }))) removeEpisode(ep.id)
+                    const confirmed = await confirmDialog({
+                      title: t('ws.deleteEpisodeConfirmTitle', { title: ep.title }),
+                      confirmLabel: t('common.delete'),
+                      cancelLabel: t('common.cancel'),
+                      tone: 'danger',
+                    })
+                    if (confirmed) removeEpisode(ep.id)
                   }}
                   className="hidden h-5 w-5 items-center justify-center rounded text-text-subtle hover:bg-danger/20 hover:text-danger group-hover:flex"
                 >

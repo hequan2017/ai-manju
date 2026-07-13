@@ -35,3 +35,6 @@ pnpm-debug.log*
 .eslintcache
 .cache/
 *.tsbuildinfo
+
+# Superpowers 工作产物
+.superpowers/

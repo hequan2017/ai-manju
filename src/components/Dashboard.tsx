@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { Copy, Download, Film, Pencil, Plus, Rocket, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useI18n } from '@/contexts/I18nContext'
+import { useDialog } from '@/contexts/DialogContext'
 import { exportProjectData, importProjectData } from '@/services/transferService'
 import { loadDemoProject } from '@/services/demoData'
 import { downloadBlob } from '@/services/utils'
@@ -42,6 +43,7 @@ const LANGUAGES = [
 export function Dashboard() {
   const { projects, loading, createProject, updateProject, refreshProjects, removeProject } = useProject()
   const { t } = useI18n()
+  const { confirmDialog, promptDialog } = useDialog()
   const navigate = useNavigate()
 
   const formatRelative = (ts: number): string => {
@@ -103,13 +105,24 @@ export function Dashboard() {
   }
   const handleDelete = async (e: MouseEvent, projectId: string, title: string) => {
     e.stopPropagation()
-    if (!confirm(t('dashboard.deleteConfirmTitle', { title }))) return
+    const confirmed = await confirmDialog({
+      title: t('dashboard.deleteConfirmTitle', { title }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    })
+    if (!confirmed) return
     await removeProject(projectId)
   }
 
   const handleRenameProject = async (e: MouseEvent, project: ManjuProject) => {
     e.stopPropagation()
-    const title = prompt(t('dashboard.titlePrompt'), project.title)
+    const title = await promptDialog({
+      title: t('dashboard.titlePrompt'),
+      defaultValue: project.title,
+      confirmLabel: t('common.rename'),
+      cancelLabel: t('common.cancel'),
+    })
     if (title && title.trim()) await updateProject({ ...project, title: title.trim() })
   }
 

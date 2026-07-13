@@ -6,6 +6,7 @@
 import { Pencil } from 'lucide-react'
 import { useProject } from '@/contexts/ProjectContext'
 import { useI18n } from '@/contexts/I18nContext'
+import { useDialog } from '@/contexts/DialogContext'
 import { updateLibraryAsset } from '@/services/assetLibraryService'
 import { Badge, Modal } from './ui'
 import type { AssetKind, VisualAsset } from '@/types'
@@ -13,6 +14,7 @@ import type { AssetKind, VisualAsset } from '@/types'
 export function ProjectLibraryModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { currentProject, updateProject } = useProject()
   const { t } = useI18n()
+  const { promptDialog } = useDialog()
 
   if (!currentProject) {
     return (
@@ -22,10 +24,15 @@ export function ProjectLibraryModal({ open, onClose }: { open: boolean; onClose:
     )
   }
 
-  const handleEdit = (kind: AssetKind, asset: VisualAsset) => {
-    const prompt = window.prompt(t('library.editPromptConfirm'), asset.visualPrompt ?? '')
-    if (prompt === null) return
-    updateProject(updateLibraryAsset(currentProject, kind, asset.id, { visualPrompt: prompt }))
+  const handleEdit = async (kind: AssetKind, asset: VisualAsset) => {
+    const visualPrompt = await promptDialog({
+      title: t('library.editPromptConfirm'),
+      defaultValue: asset.visualPrompt ?? '',
+      confirmLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+    })
+    if (visualPrompt === null) return
+    updateProject(updateLibraryAsset(currentProject, kind, asset.id, { visualPrompt }))
   }
 
   const sections: { titleKey: string; kind: AssetKind; items: VisualAsset[] }[] = [
@@ -63,7 +70,7 @@ export function ProjectLibraryModal({ open, onClose }: { open: boolean; onClose:
                         <span className="truncate text-xs text-text">{a.name}</span>
                         <button
                           title={t('library.editPromptTitle')}
-                          onClick={() => handleEdit(sec.kind, a)}
+                          onClick={() => void handleEdit(sec.kind, a)}
                           className="shrink-0 rounded p-0.5 text-text-subtle hover:bg-surface-2 hover:text-text"
                         >
                           <Pencil className="h-3 w-3" />

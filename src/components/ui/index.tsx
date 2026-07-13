@@ -1,6 +1,6 @@
 /**
  * 通用 UI 组件库
- * —— 基于 design tokens 的工业风基础组件，统一交互与视觉语言。
+ * —— 基于电影剪辑工作台视觉 token 的基础组件，统一交互与视觉语言。
  */
 import { clsx } from 'clsx'
 import {
@@ -8,6 +8,7 @@ import {
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type InputHTMLAttributes,
+  type LabelHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
@@ -20,11 +21,12 @@ type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-hover shadow-sm',
-  secondary: 'bg-surface-2 text-text hover:bg-surface-hover border border-border',
-  outline: 'border border-border-strong text-text hover:bg-surface-2',
+  primary: 'bg-accent text-bg hover:bg-accent-hover shadow-sm',
+  secondary:
+    'border border-border bg-surface-2 text-text hover:border-border-strong hover:bg-surface-hover',
+  outline: 'border border-border-strong bg-transparent text-text hover:bg-surface-2',
   ghost: 'text-text-muted hover:bg-surface-2 hover:text-text',
-  danger: 'bg-danger text-white hover:opacity-90 shadow-sm',
+  danger: 'bg-danger text-danger-foreground hover:opacity-90 shadow-sm',
 }
 
 const buttonSizes: Record<ButtonSize, string> = {
@@ -41,16 +43,28 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'secondary', size = 'md', loading, className, children, disabled, ...rest },
+  {
+    variant = 'secondary',
+    size = 'md',
+    loading,
+    className,
+    children,
+    disabled,
+    type = 'button',
+    'aria-busy': ariaBusy,
+    ...rest
+  },
   ref,
 ) {
   return (
     <button
       ref={ref}
+      type={type}
+      aria-busy={loading || ariaBusy}
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex items-center justify-center rounded-lg font-medium select-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
+        'inline-flex items-center justify-center rounded-md font-medium tracking-tight select-none transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
         'disabled:opacity-50 disabled:pointer-events-none',
         buttonVariants[variant],
         buttonSizes[size],
@@ -70,7 +84,7 @@ export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={clsx(
-        'rounded-xl border border-border bg-surface shadow-sm',
+        'rounded-lg border border-border bg-surface shadow-sm',
         className,
       )}
       {...rest}
@@ -110,7 +124,7 @@ export function Badge({
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-medium',
         badgeTones[tone],
         className,
       )}
@@ -128,8 +142,8 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
       <input
         ref={ref}
         className={clsx(
-          'h-10 w-full rounded-lg border border-border bg-bg px-3 text-sm text-text',
-          'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30',
+          'h-10 w-full rounded-md border border-border bg-bg-elevated px-3 text-sm text-text',
+          'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25',
           'disabled:opacity-50',
           className,
         )}
@@ -147,8 +161,8 @@ export const Textarea = forwardRef<
     <textarea
       ref={ref}
       className={clsx(
-        'w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text',
-        'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30',
+        'w-full rounded-md border border-border bg-bg-elevated px-3 py-2 text-sm text-text',
+        'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25',
         'disabled:opacity-50 resize-y',
         className,
       )}
@@ -163,8 +177,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
       <select
         ref={ref}
         className={clsx(
-          'h-10 w-full rounded-lg border border-border bg-bg px-3 text-sm text-text',
-          'focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30',
+          'h-10 w-full rounded-md border border-border bg-bg-elevated px-3 text-sm text-text',
+          'focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25',
           className,
         )}
         {...rest}
@@ -175,9 +189,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   },
 )
 
-export function Label({ className, children }: { className?: string; children: ReactNode }) {
+export function Label({
+  className,
+  children,
+  ...rest
+}: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
-    <label className={clsx('block text-xs font-medium text-text-muted mb-1.5', className)}>
+    <label
+      className={clsx('mb-2 block text-xs font-medium text-text-muted', className)}
+      {...rest}
+    >
       {children}
     </label>
   )
@@ -201,7 +222,7 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface/50 px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-surface/70 px-6 py-12 text-center">
       {icon && <div className="text-text-subtle">{icon}</div>}
       <div>
         <p className="text-sm font-medium text-text">{title}</p>

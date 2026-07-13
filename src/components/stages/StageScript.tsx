@@ -17,6 +17,7 @@ import {
 import { useProject } from '@/contexts/ProjectContext'
 import { useAdapterContext, useModel } from '@/contexts/ModelContext'
 import { useI18n } from '@/contexts/I18nContext'
+import { useDialog } from '@/contexts/DialogContext'
 import { continueScript, generateShots, parseScript, rewriteScript } from '@/services/scriptService'
 import { applyAssetMatches } from '@/services/assetMatchService'
 import { promoteAssetsToLibrary } from '@/services/assetLibraryService'
@@ -41,6 +42,7 @@ export function StageScript() {
   const { state } = useModel()
   const adapterCtx = useAdapterContext()
   const { t } = useI18n()
+  const { promptDialog } = useDialog()
 
   const [rawDraft, setRawDraft] = useState('')
   const [busy, setBusy] = useState(false)
@@ -138,7 +140,11 @@ export function StageScript() {
   const handleRewrite = async () => {
     if (!adapterCtx || !chatModel) return setError(t('script.modelNotReadyShort'))
     if (!rawDraft.trim()) return setError(t('script.emptyInputShort'))
-    const instruction = prompt(t('script.rewritePrompt'))
+    const instruction = await promptDialog({
+      title: t('script.rewritePrompt'),
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+    })
     if (!instruction) return
     setAiBusy(true)
     setError(null)

@@ -1,54 +1,54 @@
 @import "tailwindcss";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ===========================================================
- * Design Tokens —— 工业风（Sony Industrial Design 取向）
+ * 电影剪辑工作台视觉 Tokens
  * 通过 CSS 变量驱动明暗双主题，@theme inline 映射为 Tailwind 类
  * =========================================================== */
 :root {
-  --bg: #f6f7f9;
-  --bg-elevated: #ffffff;
+  --bg: #f3f0e9;
+  --bg-elevated: #fbfaf7;
   --surface: #ffffff;
-  --surface-2: #f0f1f4;
-  --surface-hover: #e9ebef;
-  --border: #e2e4e8;
-  --border-strong: #c9ccd3;
-  --text: #15171c;
-  --text-muted: #5a6070;
-  --text-subtle: #8a90a0;
-  --accent: #ea580c;       /* 工业琥珀橙 */
-  --accent-hover: #c2410c;
-  --accent-soft: #fff1e6;
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --shadow-color: 220 20% 40%;
+  --surface-2: #ebe6dc;
+  --surface-hover: #e4ded2;
+  --border: #ddd5c8;
+  --border-strong: #c5b9a7;
+  --text: #211f1b;
+  --text-muted: #635e55;
+  --text-subtle: #8b8377;
+  --accent: #8a5725;
+  --accent-hover: #6f451d;
+  --accent-soft: #efe2d3;
+  --success: #39715b;
+  --warning: #9a671e;
+  --danger: #a6423a;
+  --danger-foreground: #ffffff;
 }
 
 .dark {
-  --bg: #0b0c0f;
-  --bg-elevated: #131419;
-  --surface: #15171c;
-  --surface-2: #1c1f26;
-  --surface-hover: #232730;
-  --border: #262a32;
-  --border-strong: #353a45;
-  --text: #eceef2;
-  --text-muted: #9aa1ad;
-  --text-subtle: #6a7080;
-  --accent: #f59e0b;
-  --accent-hover: #fbbf24;
-  --accent-soft: #2a1d0a;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --shadow-color: 0 0% 0%;
+  --bg: #090a0c;
+  --bg-elevated: #111317;
+  --surface: #111317;
+  --surface-2: #171a20;
+  --surface-hover: #1e2229;
+  --border: #292d35;
+  --border-strong: #3e444f;
+  --text: #f1eee8;
+  --text-muted: #aaa49a;
+  --text-subtle: #716d66;
+  --accent: #d7b27a;
+  --accent-hover: #e4c28e;
+  --accent-soft: #2c2419;
+  --success: #72ad8e;
+  --warning: #d1a15e;
+  --danger: #d8756b;
+  --danger-foreground: #1b1110;
 }
 
 @theme inline {
@@ -72,6 +72,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
 }
 
 * {
@@ -95,8 +96,8 @@ body {
 
 /* 滚动条 */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -104,10 +105,12 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 8px;
-  border: 2px solid var(--bg);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-subtle);
+  background-clip: padding-box;
 }
 
 /* 通用动效 */
@@ -141,23 +144,7 @@ a {
 /* 文本选中高亮 */
 ::selection {
   background: var(--accent);
-  color: #fff;
-}
-
-/* 更精致的滚动条（更细、悬停更明显） */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-subtle);
-  background-clip: padding-box;
+  color: var(--bg);
 }
 
 /* 统一焦点环（键盘可达性） */
@@ -166,17 +153,8 @@ a {
   outline-offset: 2px;
 }
 
-/* 卡片悬停微妙上浮（应用于带 rounded-xl 的卡片） */
-[class*="rounded-xl"][class*="border"]:not(button) {
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-}
-[class*="rounded-xl"][class*="border"]:hover:not(button) {
-  box-shadow: 0 4px 20px -8px hsl(var(--shadow-color) / 0.25);
-}
-
-/* 顶部栏与模态的玻璃态 */
-header,
-[class*="backdrop-blur"] {
+/* 顶部栏玻璃态 */
+header {
   backdrop-filter: saturate(140%) blur(8px);
 }
 
@@ -184,10 +162,14 @@ header,
 input:focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 0 0 3px hsl(25 95% 53% / 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
-/* 表格行/列表项悬停反馈 */
-[class*="cursor-pointer"]:hover {
-  transform: translateY(-1px);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

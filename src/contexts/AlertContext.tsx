@@ -48,10 +48,15 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   return (
     <AlertContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2">
+      <div
+        className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {items.map((i) => (
           <div
             key={i.id}
+            role={i.tone === 'danger' ? 'alert' : 'status'}
             className={`rounded-lg border px-4 py-2 text-sm shadow-lg ${toneClass[i.tone]}`}
           >
             {i.message}

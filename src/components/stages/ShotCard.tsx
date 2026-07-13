@@ -18,12 +18,14 @@ import {
 import { useShotActions } from '@/hooks/useShotActions'
 import { useVideoSrc } from '@/hooks/useVideoSrc'
 import { useI18n } from '@/contexts/I18nContext'
+import { useDialog } from '@/contexts/DialogContext'
 import { assessShotQuality } from '@/services/qualityAssessmentService'
 import type { Keyframe, Shot } from '@/types'
 import { Badge, Button, Card, IconButton, Label } from '../ui'
 
 export function ShotCard({ shot }: { shot: Shot }) {
   const { t } = useI18n()
+  const { confirmDialog } = useDialog()
   const {
     sd,
     busy,
@@ -59,6 +61,16 @@ export function ShotCard({ shot }: { shot: Shot }) {
     shot.dialogue ? 'dialogue' : 'narration',
   )
 
+  const handleRemove = async () => {
+    const confirmed = await confirmDialog({
+      title: t('shot.deleteConfirm'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    })
+    if (confirmed) removeShot()
+  }
+
   return (
     <Card className="overflow-hidden">
       {/* 头部 */}
@@ -78,7 +90,7 @@ export function ShotCard({ shot }: { shot: Shot }) {
             icon={<Trash2 className="h-3 w-3" />}
             label={t('shot.remove')}
             className="h-6 w-6"
-            onClick={() => { if (confirm(t('shot.deleteConfirm'))) removeShot() }}
+            onClick={() => void handleRemove()}
           />
         </div>
       </div>

@@ -17,6 +17,7 @@ import {
 import { useModel } from '@/contexts/ModelContext'
 import { useI18n } from '@/contexts/I18nContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDialog } from '@/contexts/DialogContext'
 import { NewApiAccountCard } from './NewApiAccountCard'
 import {
   markDefaultProvider,
@@ -360,10 +361,17 @@ function ProvidersCard() {
 function ProviderRow({ provider, update }: { provider: ModelProvider; update: ModelUpdate }) {
   const [show, setShow] = useState(false)
   const { t } = useI18n()
+  const { confirmDialog } = useDialog()
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (provider.isBuiltIn) return
-    if (!confirm(t('settings.deleteProviderConfirm', { name: provider.name }))) return
+    const confirmed = await confirmDialog({
+      title: t('settings.deleteProviderConfirm', { name: provider.name }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      tone: 'danger',
+    })
+    if (!confirmed) return
     try {
       update((s) => removeProvider(s, provider.id))
     } catch (err) {
@@ -398,7 +406,7 @@ function ProviderRow({ provider, update }: { provider: ModelProvider; update: Mo
         </Button>
       )}
       {!provider.isBuiltIn && (
-        <Button size="icon" variant="ghost" title={t('common.delete')} onClick={handleDelete}>
+        <Button size="icon" variant="ghost" title={t('common.delete')} onClick={() => void handleDelete()}>
           <Trash2 className="h-4 w-4 text-danger" />
         </Button>
       )}
